@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/app_locale_controller.dart';
-import '../domain/models/payment_model.dart';
+import '../../domain/models/payment_model.dart';
 import 'video_consultation_room_screen.dart';
 
 class PaymentCheckoutScreen extends StatefulWidget {

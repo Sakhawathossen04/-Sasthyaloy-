@@ -6,6 +6,9 @@ import 'package:sasthyaloy/features/auth/domain/controllers/auth_controller.dart
 import 'package:sasthyaloy/features/my_health/domain/controllers/health_record_controller.dart';
 import 'package:sasthyaloy/features/voice_ai/domain/models/symptom_triage_model.dart';
 import 'package:sasthyaloy/features/teleconsultation/domain/models/payment_model.dart';
+import 'package:sasthyaloy/features/teleconsultation/presentation/screens/payment_checkout_screen.dart';
+import 'package:sasthyaloy/features/teleconsultation/presentation/screens/video_consultation_room_screen.dart';
+import 'package:sasthyaloy/features/teleconsultation/presentation/screens/post_consultation_summary_screen.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -77,5 +80,35 @@ void main() {
     );
     expect(receipt.totalAmount, 850);
     expect(receipt.paymentMethod, 'bKash');
+  });
+
+  testWidgets('Sasthyaloy teleconsultation screens instantiation test', (tester) async {
+    const paymentScreen = PaymentCheckoutScreen(
+      appointmentId: 'apt_101',
+      doctorNameBn: 'ডা. টেস্ট',
+      doctorNameEn: 'Dr. Test',
+      specialityBn: 'কার্ডিওলজিস্ট',
+      specialityEn: 'Cardiologist',
+      fee: 800,
+      isVideo: true,
+    );
+    expect(paymentScreen.fee, 800);
+
+    const videoScreen = VideoConsultationRoomScreen(
+      doctorNameBn: 'ডা. টেস্ট',
+      doctorNameEn: 'Dr. Test',
+      specialityBn: 'কার্ডিওলজিস্ট',
+      specialityEn: 'Cardiologist',
+    );
+    expect(videoScreen.doctorNameBn, 'ডা. টেস্ট');
+
+    const summaryScreen = PostConsultationSummaryScreen(
+      doctorNameBn: 'ডা. টেস্ট',
+      doctorNameEn: 'Dr. Test',
+      specialityBn: 'কার্ডিওলজিস্ট',
+      specialityEn: 'Cardiologist',
+      callDuration: '12:35',
+    );
+    expect(summaryScreen.callDuration, '12:35');
   });
 }
