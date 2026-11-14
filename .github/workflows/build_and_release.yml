@@ -40,8 +40,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: "৪. অ্যান্ড্রয়েড প্ল্যাটফর্ম কনফিগারেশন (Generate Android Harness)"
+      - name: "৪. অফিসিয়াল অ্যান্ড্রয়েড প্ল্যাটফর্ম কনফিগারেশন (Official Android Setup)"
         run: |
+          rm -rf android
           flutter create . --org com.sasthyaloy --project-name sasthyaloy --platforms=android
           chmod +x android/gradlew
 
