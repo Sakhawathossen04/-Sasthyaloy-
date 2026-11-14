@@ -40,21 +40,19 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: "৪. ফ্ল্যাটার ডিপেন্ডেন্সি ডাউনলোড (flutter pub get)"
+      - name: "৪. অ্যান্ড্রয়েড প্ল্যাটফর্ম কনফিগারেশন (Generate Android Harness)"
+        run: |
+          flutter create . --org com.sasthyaloy --project-name sasthyaloy --platforms=android
+          chmod +x android/gradlew
+
+      - name: "৫. ফ্ল্যাটার ডিপেন্ডেন্সি ডাউনলোড (flutter pub get)"
         run: flutter pub get
 
-      - name: "৫. কোড অ্যানালাইসিস (Code Analysis)"
+      - name: "৬. কোড অ্যানালাইসিস (Code Analysis)"
         run: flutter analyze || true
 
-      - name: "৬. ইউনিট টেস্ট (Smoke Test)"
+      - name: "৭. ইউনিট টেস্ট (Smoke Test)"
         run: flutter test
-
-      - name: "৭. গ্র্যাডল র‍্যাপার জেনারেশন (Generate Gradle Wrapper)"
-        run: |
-          cd android
-          gradle wrapper --gradle-version 8.5
-          chmod +x gradlew
-          cd ..
 
       - name: "৮. প্রোডাকশন রিলিজ APK বিল্ড (Build Android Release APK)"
         run: flutter build apk --release --no-tree-shake-icons
