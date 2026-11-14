@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/app_locale_controller.dart';
 import '../../../doctors/presentation/screens/speciality_search_screen.dart';
+import '../../domain/models/appointment_model.dart';
 
 class AppointmentsScreen extends StatelessWidget {
   const AppointmentsScreen({super.key});
@@ -38,35 +39,64 @@ class AppointmentsScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            // Upcoming Tab
-            ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                _buildAppointmentCard(
-                  context: context,
-                  isBn: isBn,
-                  doctorName: isBn ? 'ডা. তানভীর আহমেদ' : 'Dr. Tanvir Ahmed',
-                  speciality: isBn ? 'কার্ডিওলজিস্ট (হৃদরোগ বিশেষজ্ঞ)' : 'Cardiologist',
-                  date: '15 Nov 2026, 10:30 AM',
-                  type: isBn ? 'ভিডিও টেলি-কনসাল্টেশন' : 'Video Teleconsultation',
-                  isVideo: true,
-                  status: isBn ? 'নিশ্চিতকৃত' : 'Confirmed',
-                ),
-                const SizedBox(height: 16),
-                _buildAppointmentCard(
-                  context: context,
-                  isBn: isBn,
-                  doctorName: isBn ? 'ডা. ফারহানা চৌধুরী' : 'Dr. Farhana Chowdhury',
-                  speciality: isBn ? 'গাইনিকোলজিস্ট' : 'Gynecologist',
-                  date: '18 Nov 2026, 04:00 PM',
-                  type: isBn ? 'চেম্বারে সরাসরি' : 'In-Person Consultation',
-                  isVideo: false,
-                  status: isBn ? 'অপেক্ষমাণ' : 'Pending',
-                ),
-              ],
+            // 1. Upcoming Appointments (Dynamic via AppointmentStore)
+            ValueListenableBuilder<List<AppointmentModel>>(
+              valueListenable: AppointmentStore.instance.appointments,
+              builder: (context, appointments, _) {
+                if (appointments.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.event_busy_rounded, size: 64, color: AppColors.textMuted),
+                          const SizedBox(height: 16),
+                          Text(
+                            isBn ? 'কোনো আসন্ন অ্যাপয়েন্টমেন্ট নেই' : 'No upcoming appointments',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            isBn
+                                ? 'নতুন অ্যাপয়েন্টমেন্ট বুক করতে নিচের বাটনে চাপ দিন'
+                                : 'Tap the button below to schedule your consultation',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: appointments.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  itemBuilder: (context, index) {
+                    final apt = appointments[index];
+                    return _buildAppointmentCard(
+                      context: context,
+                      isBn: isBn,
+                      doctorName: isBn ? apt.doctorNameBn : apt.doctorNameEn,
+                      speciality: isBn ? apt.specialityBn : apt.specialityEn,
+                      date: '${apt.date}, ${apt.time}',
+                      type: apt.isVideo
+                          ? (isBn ? 'ভিডিও টেলি-কনসাল্টেশন' : 'Video Teleconsultation')
+                          : (isBn ? 'চেম্বারে সরাসরি' : 'In-Person Consultation'),
+                      isVideo: apt.isVideo,
+                      status: isBn ? apt.statusBn : apt.statusEn,
+                      serialNumber: apt.serialNumber,
+                      fee: apt.fee,
+                      hospital: isBn ? apt.hospitalBn : apt.hospitalEn,
+                    );
+                  },
+                );
+              },
             ),
 
-            // Past Tab
+            // 2. Past Appointments
             ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
@@ -80,6 +110,9 @@ class AppointmentsScreen extends StatelessWidget {
                   isVideo: false,
                   status: isBn ? 'সম্পন্ন' : 'Completed',
                   isPast: true,
+                  serialNumber: '#SL-3019',
+                  fee: 1000,
+                  hospital: isBn ? 'বঙ্গবন্ধু শেখ মুজিব মেডিকেল বিশ্ববিদ্যালয়' : 'BSMMU, Dhaka',
                 ),
               ],
             ),
@@ -111,6 +144,9 @@ class AppointmentsScreen extends StatelessWidget {
     required String type,
     required bool isVideo,
     required String status,
+    required String serialNumber,
+    required int fee,
+    required String hospital,
     bool isPast = false,
   }) {
     return Container(
@@ -119,76 +155,204 @@ class AppointmentsScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.chipBackground,
-                child: Icon(isVideo ? Icons.videocam : Icons.person, color: AppColors.primaryNavy),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isPast
+                      ? AppColors.chipBackground
+                      : (isVideo ? const Color(0xFFE0F2FE) : const Color(0xFFDCFCE7)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
                   children: [
-                    Text(
-                      doctorName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primaryNavy),
+                    Icon(
+                      isVideo ? Icons.videocam_rounded : Icons.apartment_rounded,
+                      size: 14,
+                      color: isPast
+                          ? AppColors.textSecondary
+                          : (isVideo ? AppColors.brandCyan : AppColors.emeraldGreen),
                     ),
-                    const SizedBox(height: 2),
-                    Text(speciality, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    const SizedBox(width: 4),
+                    Text(
+                      type,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isPast
+                            ? AppColors.textSecondary
+                            : (isVideo ? AppColors.brandCyan : AppColors.emeraldGreen),
+                      ),
+                    ),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isPast ? const Color(0xFFF1F5F9) : const Color(0xFFDCFCE7),
+                  color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  status,
-                  style: TextStyle(
-                    fontSize: 11,
+                  serialNumber,
+                  style: const TextStyle(
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: isPast ? AppColors.textSecondary : const Color(0xFF166534),
+                    color: AppColors.primaryNavy,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1, color: AppColors.borderLight),
-          const SizedBox(height: 12),
+          Text(
+            doctorName,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryNavy,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            speciality,
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            hospital,
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const Divider(height: 18, color: AppColors.borderLight),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.access_time_rounded, size: 16, color: AppColors.textSecondary),
-              const SizedBox(width: 6),
-              Text(date, style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
-              const Spacer(),
-              Text(type, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brandCyan)),
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 6),
+                  Text(
+                    date,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '৳ $fee',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryNavy,
+                ),
+              ),
             ],
           ),
-          if (!isPast && isVideo) ...[
-            const SizedBox(height: 14),
+          if (!isPast) ...[
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
+              height: 40,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.brandCyan,
+                  backgroundColor: isVideo ? AppColors.brandCyan : AppColors.primaryNavy,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                icon: const Icon(Icons.videocam_outlined, color: Colors.white),
-                label: Text(isBn ? 'ভিডিও কলে যুক্ত হন' : 'Join Video Consultation'),
-                onPressed: () {},
+                onPressed: () {
+                  _showAppointmentActionSheet(context, isBn, doctorName, isVideo, serialNumber);
+                },
+                icon: Icon(isVideo ? Icons.videocam : Icons.directions, size: 18),
+                label: Text(
+                  isVideo
+                      ? (isBn ? 'ভিডিও কল রুমে প্রবেশ' : 'Join Video Consultation')
+                      : (isBn ? 'চেম্বারের দিকনির্দেশনা ও ম্যাপ' : 'Directions & Map'),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showAppointmentActionSheet(
+    BuildContext context,
+    bool isBn,
+    String doctorName,
+    bool isVideo,
+    String serialNumber,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isVideo ? const Color(0xFFE0F2FE) : const Color(0xFFDCFCE7),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isVideo ? Icons.videocam_rounded : Icons.local_hospital_rounded,
+                  color: isVideo ? AppColors.brandCyan : AppColors.emeraldGreen,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                isVideo
+                    ? (isBn ? 'টেলি-কনসালটেশন ভিডিও রুম' : 'Teleconsultation Room')
+                    : (isBn ? 'চেম্বার অ্যাপয়েন্টমেন্ট তথ্য' : 'Chamber Consultation Details'),
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                isBn
+                    ? '$doctorName-এর সাথে আপনার সিরিয়াল $serialNumber নির্ধারিত সময়ে স্বয়ংক্রিয়ভাবে সক্রিয় হবে।'
+                    : 'Your appointment ($serialNumber) with $doctorName is scheduled.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryNavy,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(isBn ? 'ঠিক আছে' : 'OK'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

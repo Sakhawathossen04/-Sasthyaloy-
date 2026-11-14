@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/app_locale_controller.dart';
+import '../../domain/models/doctor_model.dart';
+import 'doctor_profile_screen.dart';
 
 class SpecialitySearchScreen extends StatefulWidget {
   final String? initialSearch;
@@ -20,11 +22,13 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
     'General Practitioner',
     'Audiology',
     'Cardiac Surgery',
-    'Cardio-Thoracic Surgery',
     'Cardiology',
     'Dental Specialties',
     'Dermatology',
     'Gastroenterology',
+    'Gynecology',
+    'Pediatrics',
+    'Urology',
   ];
 
   final Map<String, List<String>> _allSpecialities = {
@@ -93,9 +97,31 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
     super.dispose();
   }
 
+  List<DoctorModel> _getFilteredDoctors() {
+    final query = _searchController.text.trim().toLowerCase();
+    final all = DoctorModel.sampleDoctors;
+    if (query.isEmpty) return all;
+
+    return all.where((doc) {
+      final nameBn = doc.nameBn.toLowerCase();
+      final nameEn = doc.nameEn.toLowerCase();
+      final specBn = doc.specialityBn.toLowerCase();
+      final specEn = doc.specialityEn.toLowerCase();
+      final hospBn = doc.hospitalBn.toLowerCase();
+      final hospEn = doc.hospitalEn.toLowerCase();
+      return nameBn.contains(query) ||
+          nameEn.contains(query) ||
+          specBn.contains(query) ||
+          specEn.contains(query) ||
+          hospBn.contains(query) ||
+          hospEn.contains(query);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isBn = AppLocaleController.instance.isBangla;
+    final doctors = _getFilteredDoctors();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -107,7 +133,7 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
         title: Text(
           isBn ? 'স্পেশালিটি বা চিকিৎসকের নাম' : 'Speciality or Name',
           style: const TextStyle(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppColors.primaryNavy,
           ),
@@ -150,10 +176,10 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                                     : null,
                               ),
                               child: Text(
-                                isBn ? 'স্পেশালিটি (Speciality)' : 'Speciality',
+                                isBn ? 'স্পেশালিটি' : 'Speciality',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 13.5,
                                   color: _selectedTabIndex == 0 ? AppColors.primaryNavy : AppColors.textSecondary,
                                 ),
                               ),
@@ -174,10 +200,10 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                                     : null,
                               ),
                               child: Text(
-                                isBn ? 'চিকিৎসকের নাম (Physician name)' : 'Physician name',
+                                isBn ? 'চিকিৎসকদের তালিকা (${DoctorModel.sampleDoctors.length})' : 'Doctors (${DoctorModel.sampleDoctors.length})',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 13.5,
                                   color: _selectedTabIndex == 1 ? AppColors.primaryNavy : AppColors.textSecondary,
                                 ),
                               ),
@@ -188,13 +214,13 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
-                  // 2. Search Input
+                  // 2. Search Input Field
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.backgroundLight,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.borderLight),
                     ),
@@ -204,34 +230,44 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                         icon: const Icon(Icons.search, color: AppColors.textSecondary),
                         hintText: _selectedTabIndex == 0
                             ? (isBn ? 'স্পেশালিটি দিয়ে খুঁজুন' : 'Search by specialty')
-                            : (isBn ? 'চিকিৎসকের নাম দিয়ে খুঁজুন' : 'Search by name'),
+                            : (isBn ? 'চিকিৎসক, স্পেশালিটি বা হাসপাতাল' : 'Search doctor, specialty or hospital'),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                              )
+                            : null,
                       ),
                       onChanged: (val) => setState(() {}),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
+                  // TAB 0: SPECIALITIES
                   if (_selectedTabIndex == 0) ...[
-                    // 3. Most Common Speciality Header
+                    // Common Specialities
                     Row(
                       children: [
-                        const Icon(Icons.trending_up, color: AppColors.primaryNavy, size: 22),
+                        const Icon(Icons.trending_up, color: AppColors.primaryNavy, size: 20),
                         const SizedBox(width: 8),
                         Text(
                           isBn ? 'জনপ্রিয় স্পেশালিটি' : 'Most Common Speciality',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primaryNavy,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
 
                     // Chip Pills Wrap
                     Wrap(
@@ -240,8 +276,7 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                       children: _mostCommonSpecialities.map((item) {
                         return InkWell(
                           onTap: () {
-                            _searchController.text = item;
-                            setState(() {});
+                            _showDoctorsForSpeciality(item, isBn);
                           },
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
@@ -254,8 +289,8 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                               item,
                               style: const TextStyle(
                                 color: AppColors.chipText,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -263,24 +298,24 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                       }).toList(),
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
-                    // 4. All Specialities Alphabetical Section
+                    // All Specialities Alphabetical Section
                     Row(
                       children: [
                         const Icon(Icons.medical_services_outlined, color: AppColors.primaryNavy, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          isBn ? 'সকল স্পেশালিটি (All Specialities)' : 'All Specialities',
+                          isBn ? 'সকল স্পেশালিটি' : 'All Specialities',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primaryNavy,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
 
                     // Alphabet Grouped List
                     ListView.builder(
@@ -294,11 +329,11 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              padding: const EdgeInsets.symmetric(vertical: 6.0),
                               child: Text(
                                 letter,
                                 style: const TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.textSecondary,
                                 ),
@@ -307,9 +342,9 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                             const Divider(height: 1, color: AppColors.borderLight),
                             ...list.map((specialityName) {
                               return InkWell(
-                                onTap: () => _showDoctorListDialog(specialityName, isBn),
+                                onTap: () => _showDoctorsForSpeciality(specialityName, isBn),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 14.0),
+                                  padding: const EdgeInsets.symmetric(vertical: 12.0),
                                   child: Row(
                                     children: [
                                       Container(
@@ -320,20 +355,25 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                                         ),
                                         child: const Icon(
                                           Icons.medical_information_outlined,
-                                          size: 20,
+                                          size: 18,
                                           color: AppColors.primaryNavy,
                                         ),
                                       ),
-                                      const SizedBox(width: 14),
+                                      const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
                                           specialityName,
                                           style: const TextStyle(
-                                            fontSize: 15,
+                                            fontSize: 14,
                                             fontWeight: FontWeight.w500,
                                             color: AppColors.textPrimary,
                                           ),
                                         ),
+                                      ),
+                                      const Icon(
+                                        Icons.arrow_forward_ios,
+                                        size: 14,
+                                        color: AppColors.textMuted,
                                       ),
                                     ],
                                   ),
@@ -346,46 +386,73 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
                     ),
                     const SizedBox(height: 40),
                   ] else ...[
-                    // Physician Name Tab
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 60.0),
-                        child: Column(
-                          children: [
-                            Icon(Icons.person_search_outlined, size: 64, color: AppColors.textMuted.withOpacity(0.5)),
-                            const SizedBox(height: 16),
-                            Text(
-                              isBn ? 'ডাক্তারের নাম লিখে অনুসন্ধান করুন' : 'Type physician name to search',
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
-                            ),
-                          ],
+                    // TAB 1: PHYSICIAN / DOCTOR DIRECTORY
+                    if (doctors.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40.0),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.person_off_rounded, size: 54, color: AppColors.textMuted),
+                              const SizedBox(height: 12),
+                              Text(
+                                isBn
+                                    ? 'কোনো চিকিৎসক পাওয়া যায়নি'
+                                    : 'No doctors matched your search',
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                isBn ? 'অন্য কোনো নাম বা স্পেশালিটি দিয়ে চেষ্টা করুন' : 'Try searching another specialty or name',
+                                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
                         ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: doctors.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final doc = doctors[index];
+                          return _buildDoctorCard(doc, isBn);
+                        },
                       ),
-                    ),
+                    const SizedBox(height: 40),
                   ],
                 ],
               ),
             ),
           ),
 
-          // Alphabet Right Sidebar
+          // Alphabet Right Sidebar for Specialities
           if (_selectedTabIndex == 0)
             Positioned(
-              right: 4,
+              right: 2,
               top: 140,
               bottom: 40,
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: _alphabetSidebar.map((letter) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2.0),
-                      child: Text(
-                        letter,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryNavy,
+                    return InkWell(
+                      onTap: () {
+                        // Filter by letter
+                        _searchController.text = letter;
+                        setState(() {});
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+                        child: Text(
+                          letter,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryNavy,
+                          ),
                         ),
                       ),
                     );
@@ -398,46 +465,277 @@ class _SpecialitySearchScreenState extends State<SpecialitySearchScreen> {
     );
   }
 
-  void _showDoctorListDialog(String speciality, bool isBn) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  Widget _buildDoctorCard(DoctorModel doc, bool isBn) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                speciality,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+              // Avatar
+              Stack(
+                children: [
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: AppColors.brandCyan.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.person, color: AppColors.primaryNavy, size: 36),
+                  ),
+                  if (doc.isAvailableToday)
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: AppColors.emeraldGreen,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                isBn ? 'এই স্পেশালিটিতে ৩ জন বিশেষজ্ঞ চিকিৎসক পাওয়া গেছে' : '3 specialists available in this category',
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: AppColors.chipBackground,
-                  child: Icon(Icons.person, color: AppColors.primaryNavy),
-                ),
-                title: const Text('ডা. তানভীর আহমেদ', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('MBBS, FCPS | ভিজিট: ৳ ১০০০'),
-                trailing: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryNavy),
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: Text(isBn ? 'বুকিং' : 'Book'),
+              const SizedBox(width: 14),
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isBn ? doc.nameBn : doc.nameEn,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryNavy,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isBn ? doc.degreesBn : doc.degreesEn,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isBn ? doc.specialityBn : doc.specialityEn,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.brandCyan,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 10),
+          // Hospital info
+          Row(
+            children: [
+              const Icon(Icons.apartment_rounded, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  isBn ? doc.hospitalBn : doc.hospitalEn,
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 18, color: AppColors.borderLight),
+          // Rating and Booking Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${doc.rating} (${doc.reviewCount})',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isBn ? '• ${doc.experienceYears}+ বছর' : '• ${doc.experienceYears}+ yrs',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '৳ ${doc.inPersonFee} (ভিজিট)',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.emeraldGreen),
+                  ),
+                ],
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryNavy,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => DoctorProfileScreen(doctor: doc),
+                    ),
+                  );
+                },
+                child: Text(
+                  isBn ? 'বুকিং করুন' : 'Book Now',
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDoctorsForSpeciality(String speciality, bool isBn) {
+    // Find matching doctors or use first few
+    final all = DoctorModel.sampleDoctors;
+    final matched = all.where((d) =>
+        d.specialityEn.toLowerCase().contains(speciality.toLowerCase()) ||
+        speciality.toLowerCase().contains(d.specialityEn.toLowerCase())).toList();
+    final displayDocs = matched.isNotEmpty ? matched : all.take(2).toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Container(
+          padding: const EdgeInsets.all(20.0),
+          height: MediaQuery.of(context).size.height * 0.65,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                speciality,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                isBn
+                    ? '${displayDocs.length} জন বিশেষজ্ঞ চিকিৎসক পাওয়া গেছে'
+                    : '${displayDocs.length} specialist doctors available',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: displayDocs.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, idx) {
+                    final doc = displayDocs[idx];
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundLight,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: AppColors.brandCyan.withOpacity(0.15),
+                            child: const Icon(Icons.person, color: AppColors.primaryNavy, size: 28),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isBn ? doc.nameBn : doc.nameEn,
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+                                ),
+                                Text(
+                                  isBn ? doc.degreesBn : doc.degreesEn,
+                                  style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  '৳ ${doc.inPersonFee}',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.emeraldGreen),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryNavy,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => DoctorProfileScreen(doctor: doc),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              isBn ? 'প্রোফাইল' : 'View',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
