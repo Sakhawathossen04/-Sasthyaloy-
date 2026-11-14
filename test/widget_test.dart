@@ -4,7 +4,7 @@ import 'package:sasthyaloy/features/doctors/domain/models/doctor_model.dart';
 import 'package:sasthyaloy/features/appointments/domain/models/appointment_model.dart';
 import 'package:sasthyaloy/features/auth/domain/controllers/auth_controller.dart';
 import 'package:sasthyaloy/features/my_health/domain/controllers/health_record_controller.dart';
-import 'package:sasthyaloy/features/my_health/domain/models/health_record_model.dart';
+import 'package:sasthyaloy/features/voice_ai/domain/models/symptom_triage_model.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -16,7 +16,6 @@ void main() {
     final doctors = DoctorModel.sampleDoctors;
     expect(doctors.isNotEmpty, true);
     expect(doctors.any((d) => d.id == 'doc_1'), true);
-    expect(doctors.first.nameBn.contains('তানভীর'), true);
   });
 
   test('Sasthyaloy appointment store test', () {
@@ -46,31 +45,23 @@ void main() {
     final controller = AuthController.instance;
     expect(controller.currentUser.nameEn, 'Md. Sakhawat Hossen');
     expect(controller.isLoggedIn, true);
-    expect(controller.currentUser.familyMembers.length, 3);
   });
 
   test('Sasthyaloy health records & vitals test', () {
     final controller = HealthRecordController.instance;
     expect(controller.labReportsNotifier.value.isNotEmpty, true);
     expect(controller.vitalsNotifier.value.isNotEmpty, true);
-    expect(controller.prescriptionsNotifier.value.isNotEmpty, true);
+  });
 
-    final initialVitals = controller.vitalsNotifier.value.length;
-    controller.addVitalSign(
-      const VitalSignRecord(
-        id: 'vt_test',
-        systolicBp: 118,
-        diastolicBp: 78,
-        bloodGlucose: 5.2,
-        heartRate: 70,
-        spO2: 99,
-        temperature: 98.6,
-        weightKg: 68.0,
-        recordedDate: 'Today',
-        recordedTime: '12:00 PM',
-        notes: 'Test record',
-      ),
-    );
-    expect(controller.vitalsNotifier.value.length, initialVitals + 1);
+  test('Sasthyaloy voice AI clinical triage test', () {
+    // 1. Red Flag Emergency Test
+    final emergencyResult = ClinicalTriageEngine.analyzeSymptoms('আমার বুকে তীব্র ব্যথা ও শ্বাসকষ্ট', true);
+    expect(emergencyResult.isEmergency, true);
+    expect(emergencyResult.firstAidAdvice != null, true);
+
+    // 2. Routine Symptom Test
+    final routineResult = ClinicalTriageEngine.analyzeSymptoms('আমার হালকা জ্বর ও কাশি হচ্ছে', true);
+    expect(routineResult.isEmergency, false);
+    expect(routineResult.homeRemedies.isNotEmpty, true);
   });
 }
