@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>স্বাস্থ্যালয় - সেন্ট্রাল অ্যাডমিন ও হসপিটাল কন্ট্রোল পোর্টাল</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <div class="admin-wrapper">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-brand">
+        <i class="fa-solid fa-hospital-user"></i>
+        <span>স্বাস্থ্যালয় অ্যাডমিন</span>
+      </div>
+      <ul class="nav-links">
+        <li class="active"><a href="#"><i class="fa-solid fa-chart-line"></i> ড্যাশবোর্ড ওভারভিউ</a></li>
+        <li><a href="#"><i class="fa-solid fa-hospital"></i> হাসপাতাল ও আইসিইউ</a></li>
+        <li><a href="#"><i class="fa-solid fa-user-doctor"></i> ডাক্তার ভেরিফিকেশন</a></li>
+        <li><a href="#"><i class="fa-solid fa-money-bill-wave"></i> বিকাশ/নগদ রেভিনিউ</a></li>
+        <li><a href="#"><i class="fa-solid fa-truck-medical"></i> ৯৯৯ জরুরি ডিসপ্যাচ</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <h2>সেন্ট্রাল হেলথকেয়ার কমান্ড ড্যাশবোর্ড (Super Admin Portal)</h2>
+        <div class="admin-profile">
+          <span class="badge-role">সুপার অ্যাডমিন</span>
+          <strong>সাখাওয়াত হোসেন</strong>
+        </div>
+      </header>
+
+      <div class="admin-content">
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon blue"><i class="fa-solid fa-users"></i></div>
+            <div class="kpi-info">
+              <span>মোট নিবন্ধিত রোগী</span>
+              <h3>১,২৪,৫০০+</h3>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon green"><i class="fa-solid fa-user-doctor"></i></div>
+            <div class="kpi-info">
+              <span>সক্রিয় চিকিৎসক (BMDC)</span>
+              <h3>৩,৪২০ জন</h3>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon orange"><i class="fa-solid fa-bed-pulse"></i></div>
+            <div class="kpi-info">
+              <span>আইসিইউ বেড খালি</span>
+              <h3>১০১ টি (ঢাকা মেট্রো)</h3>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon red"><i class="fa-solid fa-truck-medical"></i></div>
+            <div class="kpi-info">
+              <span>আজকের জরুরি SOS কল</span>
+              <h3>৪৮ টি (৯৯৯/১৬২৬৩)</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Realtime Tables -->
+        <div class="tables-grid">
+          <!-- Hospital ICU Status -->
+          <div class="table-card">
+            <div class="table-header">
+              <h3><i class="fa-solid fa-hospital"></i> শীর্ষ হাসপাতাল ও আইসিইউ লাইভ ক্যাপাসিটি</h3>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>হাসপাতাল</th>
+                  <th>শহর</th>
+                  <th>মোট বেড</th>
+                  <th>আইসিইউ খালি</th>
+                  <th>ইমার্জেন্সি হটলাইন</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>স্কয়ার হসপিটাল লিমিটেড</strong></td>
+                  <td>পান্থপথ, ঢাকা</td>
+                  <td>৪০০</td>
+                  <td><span class="status-badge green">২৪ টি খালি</span></td>
+                  <td>১০৬১৬</td>
+                </tr>
+                <tr>
+                  <td><strong>এভারকেয়ার হসপিটাল</strong></td>
+                  <td>বসুন্ধরা, ঢাকা</td>
+                  <td>৪২৫</td>
+                  <td><span class="status-badge green">৩০ টি খালি</span></td>
+                  <td>১০৬৭৮</td>
+                </tr>
+                <tr>
+                  <td><strong>ইউনাইটেড হসপিটাল</strong></td>
+                  <td>গুলশান, ঢাকা</td>
+                  <td>৫০০</td>
+                  <td><span class="status-badge green">২২ টি খালি</span></td>
+                  <td>১০৬৬৬</td>
+                </tr>
+                <tr>
+                  <td><strong>বিএসএমএমইউ (পিজি হসপিটাল)</strong></td>
+                  <td>শাহবাগ, ঢাকা</td>
+                  <td>১২০০</td>
+                  <td><span class="status-badge orange">৪৫ টি খালি</span></td>
+                  <td>১৬২৬৩</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pending Doctor Verifications -->
+          <div class="table-card">
+            <div class="table-header">
+              <h3><i class="fa-solid fa-id-card-clip"></i> নতুন চিকিৎসক অনবোর্ডিং ও বিএমডিসি ভেরিফিকেশন</h3>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>চিকিৎসকের নাম</th>
+                  <th>বিএমডিসি নম্বর</th>
+                  <th>স্পেশালিটি</th>
+                  <th>অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>ডা. মো. রফিকুল ইসলাম</td>
+                  <td>BMDC-A-62810</td>
+                  <td>নিউরোলজি</td>
+                  <td>
+                    <button class="btn-approve" onclick="approveDoctor(this)">অনুমোদন</button>
+                    <button class="btn-reject">বাতিল</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>ডা. সাবরিনা শারমিন</td>
+                  <td>BMDC-A-74190</td>
+                  <td>গাইনোকোলজি</td>
+                  <td>
+                    <button class="btn-approve" onclick="approveDoctor(this)">অনুমোদন</button>
+                    <button class="btn-reject">বাতিল</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function approveDoctor(btn) {
+      const row = btn.closest('tr');
+      row.innerHTML = `<td colspan="4" style="text-align: center; color: #16A34A; font-weight: bold;"><i class="fa-solid fa-check-circle"></i> বিএমডিসি সফলভাবে ভেরিফাইড ও স্বাস্থ্যালয়ে অন্তর্ভুক্ত হয়েছে!</td>`;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>স্বাস্থ্যালয় - ডক্টর কনসালটেশন পোর্টাল | Sasthyaloy Doctor Portal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="brand-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+      <div class="brand-text">
+        <h2>স্বাস্থ্যালয় (Sasthyaloy)</h2>
+        <span>ডক্টর কনসালটেশন ও ই-প্রেসক্রিপশন পোর্টাল</span>
+      </div>
+    </div>
+    <div class="doctor-badge">
+      <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=100&h=100&fit=crop&crop=faces" alt="Doctor" class="doc-avatar">
+      <div class="doc-info">
+        <strong>অধ্যাপক ডা. তানভীর আহমেদ</strong>
+        <span>BMDC-A-42981 | কার্ডিওলজিস্ট</span>
+      </div>
+      <span class="status-indicator online">অনলাইন</span>
+    </div>
+  </header>
+
+  <div class="portal-container">
+    <!-- Left Sidebar: Patient Queue -->
+    <aside class="sidebar-queue">
+      <div class="queue-header">
+        <h3><i class="fa-solid fa-users-line"></i> আজকের রোগী সিরিয়াল (Patient Queue)</h3>
+        <span class="badge-count">৩ জন অপেক্ষমাণ</span>
+      </div>
+
+      <div class="queue-list" id="queueList">
+        <!-- Patient Item 1 -->
+        <div class="queue-card active" onclick="selectPatient(1)">
+          <div class="q-top">
+            <span class="serial-tag">#SL-1001</span>
+            <span class="type-tag video"><i class="fa-solid fa-video"></i> ভিডিও কল</span>
+          </div>
+          <h4>মো. সাখাওয়াত হোসেন</h4>
+          <p>বয়স: ২৯ বছর | রক্তের গ্রুপ: B+</p>
+          <div class="q-bottom">
+            <span>সময়: ১০:৩০ AM</span>
+            <span class="paid-status"><i class="fa-solid fa-circle-check"></i> পরিশোধিত (bKash)</span>
+          </div>
+        </div>
+
+        <!-- Patient Item 2 -->
+        <div class="queue-card" onclick="selectPatient(2)">
+          <div class="q-top">
+            <span class="serial-tag">#SL-1002</span>
+            <span class="type-tag chamber"><i class="fa-solid fa-hospital"></i> চেম্বার</span>
+          </div>
+          <h4>রোকেয়া বেগম</h4>
+          <p>বয়স: ৫৪ বছর | রক্তের গ্রুপ: O+</p>
+          <div class="q-bottom">
+            <span>সময়: ১১:০০ AM</span>
+            <span class="paid-status"><i class="fa-solid fa-circle-check"></i> পরিশোধিত (Nagad)</span>
+          </div>
+        </div>
+
+        <!-- Patient Item 3 -->
+        <div class="queue-card" onclick="selectPatient(3)">
+          <div class="q-top">
+            <span class="serial-tag">#SL-1003</span>
+            <span class="type-tag video"><i class="fa-solid fa-video"></i> ভিডিও কল</span>
+          </div>
+          <h4>আব্দুল কাদের</h4>
+          <p>বয়স: ৪২ বছর | রক্তের গ্রুপ: A+</p>
+          <div class="q-bottom">
+            <span>সময়: ১১:৩০ AM</span>
+            <span class="paid-status"><i class="fa-solid fa-circle-check"></i> পরিশোধিত (Card)</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Consultation Area -->
+    <main class="consultation-workbench">
+      <!-- Top Action Bar -->
+      <div class="workbench-header">
+        <div>
+          <h2 id="patientHeaderName">মো. সাখাওয়াত হোসেন (Md. Sakhawat Hossen)</h2>
+          <p id="patientHeaderMeta">সিরিয়াল: #SL-1001 | বয়স: ২৯ | লিঙ্গ: পুরুষ | অ্যালার্জি: Penicillin, Dust | ক্রনিক ডিজিজ: Mild Asthma</p>
+        </div>
+        <div class="action-buttons">
+          <button class="btn btn-video" id="startCallBtn" onclick="toggleVideoCall()">
+            <i class="fa-solid fa-video"></i> ভিডিও কনসালটেশন শুরু করুন
+          </button>
+        </div>
+      </div>
+
+      <!-- WebRTC Video Consultation Frame (Hidden initially) -->
+      <div class="video-call-panel" id="videoCallPanel" style="display: none;">
+        <div class="video-grid">
+          <div class="remote-video-box">
+            <div class="video-placeholder">
+              <i class="fa-solid fa-user-doctor"></i>
+              <span>রোগীর ভিডিও লাইভ স্ট্রিম (WebRTC HD)</span>
+            </div>
+          </div>
+          <div class="local-video-box">
+            <div class="self-cam-preview">
+              <i class="fa-solid fa-user"></i>
+              <span>আপনার প্রিভিউ</span>
+            </div>
+          </div>
+        </div>
+        <div class="call-controls">
+          <button class="ctrl-btn mute"><i class="fa-solid fa-microphone"></i></button>
+          <button class="ctrl-btn cam"><i class="fa-solid fa-video"></i></button>
+          <button class="ctrl-btn end" onclick="toggleVideoCall()"><i class="fa-solid fa-phone-slash"></i> কল সমাপ্ত করুন</button>
+        </div>
+      </div>
+
+      <!-- Patient EHR & Prescription Tabs -->
+      <div class="workbench-body">
+        <!-- Patient History & Lab Tests -->
+        <div class="history-panel">
+          <h3><i class="fa-solid fa-notes-medical"></i> রোগীর ডিজিটাল স্বাস্থ্য রেকর্ড (EHR)</h3>
+          
+          <div class="vitals-summary-box">
+            <div class="vital-item">
+              <span class="vital-label">রক্তচাপ (BP)</span>
+              <strong class="vital-val">120/80 mmHg</strong>
+            </div>
+            <div class="vital-item">
+              <span class="vital-label">ব্লাড সুগার</span>
+              <strong class="vital-val">5.8 mmol/L</strong>
+            </div>
+            <div class="vital-item">
+              <span class="vital-label">পালস রেট</span>
+              <strong class="vital-val">74 bpm</strong>
+            </div>
+            <div class="vital-item">
+              <span class="vital-label">অক্সিজেন SpO2</span>
+              <strong class="vital-val">99%</strong>
+            </div>
+          </div>
+
+          <div class="recent-reports">
+            <h4>সাম্প্রতিক ল্যাব টেস্ট রিপোর্টস:</h4>
+            <ul class="report-list">
+              <li><i class="fa-solid fa-file-pdf"></i> ইসিজি ও কার্ডিয়াক এনজাইম প্যানেল - স্কয়ার হসপিটাল (Normal)</li>
+              <li><i class="fa-solid fa-file-pdf"></i> কমপ্লিট ব্লাড কাউন্ট (CBC) ও ESR (Normal)</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Digital E-Prescription Builder -->
+        <div class="prescription-panel">
+          <div class="rx-header">
+            <h3><i class="fa-solid fa-prescription"></i> ডিজিটাল ই-প্রেসক্রিপশন জেনারেটর</h3>
+            <span class="badge-rx">স্বাস্থ্যালয় অফিসিয়াল প্যাড</span>
+          </div>
+
+          <form id="rxForm" onsubmit="generatePrescription(event)">
+            <div class="form-group">
+              <label>ক্লিনিক্যাল ডায়াগনোসিস (Diagnosis):</label>
+              <input type="text" id="rxDiagnosis" value="Mild Cardiac Palpitation & Seasonal Allergic Rhinitis" required>
+            </div>
+
+            <div class="medicine-section">
+              <div class="med-header">
+                <h4>প্রেসক্রাইবড ওষুধ তালিকা (Rx Medicines)</h4>
+                <button type="button" class="btn-add-med" onclick="addMedicineRow()">+ নতুন ওষুধ যোগ করুন</button>
+              </div>
+
+              <div id="medicineRows">
+                <div class="medicine-row">
+                  <input type="text" placeholder="ওষুধের নাম (e.g. Tab. Napa 500mg)" value="Tab. Napa 500mg" required>
+                  <select>
+                    <option value="১+০+১ (সকাল ও রাত)">১+০+১ (সকাল ও রাত)</option>
+                    <option value="১+১+১ (সকাল, দুপুর ও রাত)">১+১+১ (৩ বার)</option>
+                    <option value="০+০+১ (রাতে একবার)">০+০+১ (রাতে একবার)</option>
+                  </select>
+                  <select>
+                    <option value="খাবারের পর (After Meal)">খাবারের পর</option>
+                    <option value="খাবারের আগে (Before Meal)">খাবারের আগে</option>
+                  </select>
+                  <input type="text" placeholder="কত দিন (e.g. ৫ দিন)" value="৫ দিন" style="width: 90px;">
+                </div>
+
+                <div class="medicine-row">
+                  <input type="text" placeholder="ওষুধের নাম" value="Tab. Bicozin Multivitamin" required>
+                  <select>
+                    <option value="০+১+০ (দুপুরে একবার)">০+১+০ (দুপুরে একবার)</option>
+                    <option value="১+০+১ (সকাল ও রাত)">১+০+১ (সকাল ও রাত)</option>
+                  </select>
+                  <select>
+                    <option value="খাবারের পর (After Meal)">খাবারের পর</option>
+                  </select>
+                  <input type="text" placeholder="কত দিন" value="১৫ দিন" style="width: 90px;">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label>বিশেষ পরামর্শ ও উপদেশ (Advice):</label>
+              <textarea id="rxAdvice" rows="2">পর্যাপ্ত পানি পান করুন, তৈলাক্ত খাবার এড়িয়ে চলুন। ৭ দিন পর ফলো-আপ করবেন।</textarea>
+            </div>
+
+            <div class="rx-actions">
+              <button type="submit" class="btn btn-save-rx">
+                <i class="fa-solid fa-signature"></i> ডিজিটাল স্বাক্ষর ও রোগীকে প্রেসক্রিপশন পাঠান
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
