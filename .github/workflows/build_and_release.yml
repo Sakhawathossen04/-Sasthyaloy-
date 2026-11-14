@@ -60,21 +60,15 @@ jobs:
       - name: "৮. ইউনিট টেস্ট (Smoke Test)"
         run: flutter test
 
-      - name: "৯. অ্যান্ড্রয়েড APK বিল্ড (Build Android APK)"
+      - name: "৯. অ্যান্ড্রয়েড রিলিজ APK বিল্ড (Build Android Release APK)"
         run: |
-          echo "Building Android APK..."
-          flutter build apk --debug > build_debug.log 2>&1 || {
-            echo "::error::Debug APK Build Failed! Showing error log:"
-            grep -E -C 2 "(Error|FAILED|Exception|error:|FAILURE)" build_debug.log | head -n 40 | while IFS= read -r line; do
-              echo "::error::$line"
-            done
-            exit 1
-          }
+          echo "Building Production Release APK..."
+          flutter build apk --release --no-tree-shake-icons
 
       - name: "১০. বিল্ড করা APK আর্টফ্যাক্টসে আপলোড (Upload APK Artifacts)"
         uses: actions/upload-artifact@v4
         with:
-          name: Sasthyaloy-APK
+          name: Sasthyaloy-Release-APK
           path: build/app/outputs/flutter-apk/*.apk
           retention-days: 14
 
