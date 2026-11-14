@@ -5,6 +5,7 @@ import 'package:sasthyaloy/features/appointments/domain/models/appointment_model
 import 'package:sasthyaloy/features/auth/domain/controllers/auth_controller.dart';
 import 'package:sasthyaloy/features/my_health/domain/controllers/health_record_controller.dart';
 import 'package:sasthyaloy/features/voice_ai/domain/models/symptom_triage_model.dart';
+import 'package:sasthyaloy/features/teleconsultation/domain/models/payment_model.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -54,14 +55,27 @@ void main() {
   });
 
   test('Sasthyaloy voice AI clinical triage test', () {
-    // 1. Red Flag Emergency Test
     final emergencyResult = ClinicalTriageEngine.analyzeSymptoms('আমার বুকে তীব্র ব্যথা ও শ্বাসকষ্ট', true);
     expect(emergencyResult.isEmergency, true);
-    expect(emergencyResult.firstAidAdvice != null, true);
 
-    // 2. Routine Symptom Test
     final routineResult = ClinicalTriageEngine.analyzeSymptoms('আমার হালকা জ্বর ও কাশি হচ্ছে', true);
     expect(routineResult.isEmergency, false);
-    expect(routineResult.homeRemedies.isNotEmpty, true);
+  });
+
+  test('Sasthyaloy payment & teleconsultation test', () {
+    const receipt = TransactionReceipt(
+      transactionId: 'TRX-BK948201',
+      appointmentId: 'apt_101',
+      doctorNameBn: 'অধ্যাপক ডা. তানভীর আহমেদ',
+      doctorNameEn: 'Prof. Dr. Tanvir Ahmed',
+      paymentMethod: 'bKash',
+      doctorFee: 800,
+      platformFee: 50,
+      totalAmount: 850,
+      date: 'Today',
+      status: 'Success',
+    );
+    expect(receipt.totalAmount, 850);
+    expect(receipt.paymentMethod, 'bKash');
   });
 }

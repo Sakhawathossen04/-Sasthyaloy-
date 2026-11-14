@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/app_locale_controller.dart';
 import '../../../doctors/presentation/screens/speciality_search_screen.dart';
+import '../../../teleconsultation/presentation/screens/payment_checkout_screen.dart';
+import '../../../teleconsultation/presentation/screens/video_consultation_room_screen.dart';
 import '../../domain/models/appointment_model.dart';
 
 class AppointmentsScreen extends StatelessWidget {
@@ -341,15 +343,83 @@ class AppointmentsScreen extends StatelessWidget {
                 style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryNavy,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              if (isVideo) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.brandCyan,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => VideoConsultationRoomScreen(
+                            doctorNameBn: doctorName,
+                            doctorNameEn: doctorName,
+                            specialityBn: 'টেলিমেডিসিন কনসালটেশন',
+                            specialityEn: 'Teleconsultation',
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.videocam_rounded, size: 20),
+                    label: Text(
+                      isBn ? 'ভিডিও কল রুমে প্রবেশ করুন' : 'Join Video Consultation Room',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text(isBn ? 'ঠিক আছে' : 'OK'),
-              ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primaryNavy,
+                      side: const BorderSide(color: AppColors.borderLight),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PaymentCheckoutScreen(
+                            appointmentId: serialNumber,
+                            doctorNameBn: doctorName,
+                            doctorNameEn: doctorName,
+                            specialityBn: 'টেলিমেডিসিন',
+                            specialityEn: 'Teleconsultation',
+                            fee: 800,
+                            isVideo: true,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.payment_rounded, size: 18),
+                    label: Text(
+                      isBn ? 'বিকাশ / নগদ পেমেন্ট চেকআউট' : 'bKash / Nagad Checkout',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryNavy,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: Text(isBn ? 'ঠিক আছে (Got it)' : 'OK'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
