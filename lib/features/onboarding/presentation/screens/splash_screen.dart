@@ -16,6 +16,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   late AnimationController _animController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+  Timer? _navigationTimer;
 
   @override
   void initState() {
@@ -36,7 +37,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _animController.forward();
 
     // Auto navigate after 2.5 seconds
-    Timer(const Duration(milliseconds: 2500), () {
+    _navigationTimer = Timer(const Duration(milliseconds: 2500), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
@@ -47,6 +48,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   void dispose() {
+    _navigationTimer?.cancel();
     _animController.dispose();
     super.dispose();
   }
@@ -79,9 +81,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.brandCyan.withOpacity(0.3),
-                          blurRadius: 30,
-                          spreadRadius: 5,
+                          color: AppColors.brandCyan.withOpacity(0.35),
+                          blurRadius: 32,
+                          spreadRadius: 6,
                         ),
                       ],
                     ),
@@ -121,7 +123,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       isBn ? AppStrings.taglineBn : AppStrings.taglineEn,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.75),
+                        color: Colors.white.withOpacity(0.8),
                       ),
                     ),
                   ],
@@ -146,7 +148,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.health_and_safety, color: AppColors.emeraldGreen, size: 20),
+                          const Icon(Icons.health_and_safety, color: AppColors.emeraldGreen, size: 20),
                           const SizedBox(width: 8),
                           Text(
                             isBn ? AppStrings.subBrandingBn : AppStrings.subBrandingEn,
