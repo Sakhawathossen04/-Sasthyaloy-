@@ -259,14 +259,15 @@ class MenuScreen extends StatelessWidget {
               TextField(
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('+880', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
-                        SizedBox(width: 8),
-                        VerticalDivider(width: 1, indent: 14, endIndent: 14),
+                        const Text('+880', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryNavy)),
+                        const SizedBox(width: 8),
+                        Container(width: 1, height: 20, color: AppColors.borderLight),
+                        const SizedBox(width: 8),
                       ],
                     ),
                   ),

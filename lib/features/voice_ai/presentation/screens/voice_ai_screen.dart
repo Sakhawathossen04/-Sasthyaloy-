@@ -55,7 +55,7 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
               : '⚠️ EMERGENCY ALERT: Chest discomfort or pain can be critical. Please call emergency services immediately or visit the nearest emergency room.';
         } else {
           _aiResponse = AppLocaleController.instance.isBangla
-              ? 'আপনার লক্ষণগুলো সাধারণ পানিশূন্যতা বা ভাইরাল ফ্লু হতে পারে। প্রচুর পানি ও বিশ্রাম গ্রহণ করুন। লক্ষণ 지속 হলে একজন জেনারেল ফিজিশিয়ানের পরামর্শ নিন।'
+              ? 'আপনার লক্ষণগুলো সাধারণ পানিশূন্যতা বা ভাইরাল ফ্লু হতে পারে। প্রচুর পানি ও বিশ্রাম গ্রহণ করুন। লক্ষণ অব্যাহত থাকলে একজন জেনারেল ফিজিশিয়ানের পরামর্শ নিন।'
               : 'Your symptoms may indicate dehydration or seasonal viral fatigue. Rest well and hydrate. If fever persists for >48h, consult a General Practitioner.';
         }
       });

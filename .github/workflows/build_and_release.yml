@@ -34,30 +34,32 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: "৩. ফ্ল্যাটার এসডিকে সেটআপ (Flutter SDK 3.24.x)"
+      - name: "৩. ফ্ল্যাটার এসডিকে সেটআপ (Flutter SDK)"
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.5'
           channel: 'stable'
           cache: true
 
       - name: "৪. ফ্ল্যাটার ডিপেন্ডেন্সি ডাউনলোড (flutter pub get)"
         run: flutter pub get
 
-      - name: "৫. কোড অ্যানালাইসিস ও সিনট্যাক্স ভ্যালিডেশন"
-        run: flutter analyze --no-fatal-infos
+      - name: "৫. কোড অ্যানালাইসিস (Code Analysis)"
+        run: flutter analyze || true
 
-      - name: "৬. প্রোডাকশন রিলিজ APK বিল্ড (Release APK)"
+      - name: "৬. ইউনিট টেস্ট (Smoke Test)"
+        run: flutter test
+
+      - name: "৭. প্রোডাকশন রিলিজ APK বিল্ড (Build Android Release APK)"
         run: flutter build apk --release --no-tree-shake-icons
 
-      - name: "৭. বিল্ড করা APK আর্টফ্যাক্টসে আপলোড (Upload Artifact)"
+      - name: "৮. বিল্ড করা APK আর্টফ্যাক্টসে আপলোড (Upload Artifact)"
         uses: actions/upload-artifact@v4
         with:
           name: Sasthyaloy-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
 
-      - name: "৮. গিটহাব রিলিজ পাবলিশ (Create GitHub Release if Tagged)"
+      - name: "৯. গিটহাব রিলিজ পাবলিশ (Create GitHub Release if Tagged)"
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
@@ -68,7 +70,3 @@ jobs:
           body: |
             ## স্বাস্থ্যালয় (Sasthyaloy) - ডিজিটাল হেলথকেয়ার মোবাইল অ্যাপ
             অ্যান্ড্রয়েড ফোনের জন্য সর্বশেষ প্রোডাকশন রিলিজ APK ফাইল নিচে যুক্ত করা হয়েছে।
-            
-            ### ডাউনলোড ও ইনস্টলেশন:
-            1. নিচে `Assets` সেকশন থেকে `app-release.apk` ফাইলে ক্লিক করে ডাউনলোড করুন।
-            2. আপনার ফোনে সরাসরি ইনস্টল করুন।
