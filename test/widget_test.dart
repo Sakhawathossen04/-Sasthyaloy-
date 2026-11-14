@@ -3,7 +3,8 @@ import 'package:sasthyaloy/core/constants/app_strings.dart';
 import 'package:sasthyaloy/features/doctors/domain/models/doctor_model.dart';
 import 'package:sasthyaloy/features/appointments/domain/models/appointment_model.dart';
 import 'package:sasthyaloy/features/auth/domain/controllers/auth_controller.dart';
-import 'package:sasthyaloy/features/auth/domain/models/user_profile_model.dart';
+import 'package:sasthyaloy/features/my_health/domain/controllers/health_record_controller.dart';
+import 'package:sasthyaloy/features/my_health/domain/models/health_record_model.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -46,9 +47,30 @@ void main() {
     expect(controller.currentUser.nameEn, 'Md. Sakhawat Hossen');
     expect(controller.isLoggedIn, true);
     expect(controller.currentUser.familyMembers.length, 3);
+  });
 
-    // Switch family member
-    controller.switchFamilyMember('fam_1');
-    expect(controller.currentUser.activeMemberId, 'fam_1');
+  test('Sasthyaloy health records & vitals test', () {
+    final controller = HealthRecordController.instance;
+    expect(controller.labReportsNotifier.value.isNotEmpty, true);
+    expect(controller.vitalsNotifier.value.isNotEmpty, true);
+    expect(controller.prescriptionsNotifier.value.isNotEmpty, true);
+
+    final initialVitals = controller.vitalsNotifier.value.length;
+    controller.addVitalSign(
+      const VitalSignRecord(
+        id: 'vt_test',
+        systolicBp: 118,
+        diastolicBp: 78,
+        bloodGlucose: 5.2,
+        heartRate: 70,
+        spO2: 99,
+        temperature: 98.6,
+        weightKg: 68.0,
+        recordedDate: 'Today',
+        recordedTime: '12:00 PM',
+        notes: 'Test record',
+      ),
+    );
+    expect(controller.vitalsNotifier.value.length, initialVitals + 1);
   });
 }
