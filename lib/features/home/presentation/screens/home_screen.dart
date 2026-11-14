@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/localization/app_locale_controller.dart';
+import '../../../auth/domain/controllers/auth_controller.dart';
+import '../../../auth/presentation/screens/phone_auth_screen.dart';
 import '../../../doctors/presentation/screens/speciality_search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -25,8 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedHospital;
 
   // User State: Guest vs Logged In
-  bool _isLoggedIn = false;
-  String _userName = 'Guest';
+  bool get _isLoggedIn => AuthController.instance.isLoggedIn;
+  String get _userName => AuthController.instance.currentUser.nameEn;
 
   // Wellness Tracking Connected State
   bool _isWellnessConnected = false;
@@ -62,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    AuthController.instance.userNotifier.addListener(_onUserChanged);
     // Auto-advance banner carousel every 4 seconds
     _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (!mounted) return;
@@ -76,8 +79,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _onUserChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    AuthController.instance.userNotifier.removeListener(_onUserChanged);
     _bannerTimer?.cancel();
     _bannerController.dispose();
     super.dispose();
@@ -1235,73 +1243,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Quick Sign In Dialog (Simulates Phone OTP login)
   void _showLoginDialog(bool isBn) {
-    final phoneController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            const Icon(Icons.lock_person_rounded, color: AppColors.primaryNavy, size: 26),
-            const SizedBox(width: 10),
-            Text(isBn ? 'লগইন করুন' : 'Sign In', style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isBn
-                  ? 'আপনার স্বাস্থ্যের পূর্ণাঙ্গ রেকর্ড ও প্রেসক্রিপশন দেখতে ফোন নম্বর দিয়ে প্রবেশ করুন।'
-                  : 'Enter your phone number to access your complete health records & prescriptions.',
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                prefixText: '+880 ',
-                labelText: isBn ? 'মোবাইল নম্বর' : 'Mobile Number',
-                hintText: '017XXXXXXXX',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(isBn ? 'বাতিল' : 'Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryNavy,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              setState(() {
-                _isLoggedIn = true;
-                _userName = 'Sakhawat';
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: AppColors.emeraldGreen,
-                  behavior: SnackBarBehavior.floating,
-                  content: Text(
-                    isBn
-                        ? 'সফলভাবে লগইন হয়েছে! স্বাগতম স্বাস্থ্যালয়ে।'
-                        : 'Successfully signed in! Welcome to Sasthyaloy.',
-                  ),
-                ),
-              );
-            },
-            child: Text(isBn ? 'ওটিপি পাঠান ও লগইন' : 'Verify & Sign In'),
-          ),
-        ],
-      ),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PhoneAuthScreen()),
     );
   }
 

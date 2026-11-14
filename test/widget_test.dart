@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sasthyaloy/core/constants/app_strings.dart';
 import 'package:sasthyaloy/features/doctors/domain/models/doctor_model.dart';
 import 'package:sasthyaloy/features/appointments/domain/models/appointment_model.dart';
+import 'package:sasthyaloy/features/auth/domain/controllers/auth_controller.dart';
+import 'package:sasthyaloy/features/auth/domain/models/user_profile_model.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -37,5 +39,16 @@ void main() {
     );
     AppointmentStore.instance.addAppointment(testApt);
     expect(AppointmentStore.instance.appointments.value.length, initialCount + 1);
+  });
+
+  test('Sasthyaloy auth controller test', () {
+    final controller = AuthController.instance;
+    expect(controller.currentUser.nameEn, 'Md. Sakhawat Hossen');
+    expect(controller.isLoggedIn, true);
+    expect(controller.currentUser.familyMembers.length, 3);
+
+    // Switch family member
+    controller.switchFamilyMember('fam_1');
+    expect(controller.currentUser.activeMemberId, 'fam_1');
   });
 }
