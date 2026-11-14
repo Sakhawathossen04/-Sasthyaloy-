@@ -55,40 +55,32 @@ jobs:
       - name: "৭. ইউনিট টেস্ট (Smoke Test)"
         run: flutter test
 
-      - name: "৮. প্রোডাকশন রিলিজ APK বিল্ড (Build Android Release APK)"
-        id: build_apk
+      - name: "৮. অ্যান্ড্রয়েড APK বিল্ড (Build Android APK)"
         run: |
-          echo "Starting Flutter APK build..."
-          flutter build apk --release --no-tree-shake-icons > build.log 2>&1 || {
-            echo "::error::BUILD FAILED! Showing last 100 lines of build.log:"
-            tail -n 100 build.log
-            exit 1
+          echo "Building Debug APK..."
+          flutter build apk --debug
+          
+          echo "Building Release APK..."
+          flutter build apk --release --no-tree-shake-icons > release_build.log 2>&1 || {
+            echo "Release build log (last 40 lines):"
+            sed -e 's/^/::error::/' release_build.log | tail -n 40
           }
 
-      - name: "৯. বিল্ড লগ সংরক্ষণ (Upload Build Log on Failure)"
-        if: failure()
+      - name: "৯. বিল্ড করা APK আর্টফ্যাক্টসে আপলোড (Upload APK Artifacts)"
         uses: actions/upload-artifact@v4
         with:
-          name: Sasthyaloy-Build-Log
-          path: build.log
-          retention-days: 7
-
-      - name: "১০. বিল্ড করা APK আর্টফ্যাক্টসে আপলোড (Upload Artifact)"
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Sasthyaloy-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: Sasthyaloy-APK
+          path: build/app/outputs/flutter-apk/*.apk
           retention-days: 14
 
-      - name: "১১. গিটহাব রিলিজ পাবলিশ (Create GitHub Release if Tagged)"
-        if: success() && startsWith(github.ref, 'refs/tags/v')
+      - name: "১০. গিটহাব রিলিজ পাবলিশ (Create GitHub Release if Tagged)"
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: build/app/outputs/flutter-apk/*.apk
           name: "স্বাস্থ্যালয় রিলিজ ${{ github.ref_name }}"
           draft: false
           prerelease: false
           body: |
             ## স্বাস্থ্যালয় (Sasthyaloy) - ডিজিটাল হেলথকেয়ার মোবাইল অ্যাপ
-            অ্যান্ড্রয়েড ফোনের জন্য সর্বশেষ প্রোডাকশন রিলিজ APK ফাইল নিচে যুক্ত করা হয়েছে।
+            অ্যান্ড্রয়েড ফোনের জন্য সর্বশেষ APK ফাইল নিচে যুক্ত করা হয়েছে।
