@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_strings.dart';
 import '../../../../core/localization/app_locale_controller.dart';
 import '../../../../core/services/emergency_call_service.dart';
+import '../../../../core/services/openrouter_service.dart';
+import '../../../../core/services/speech_service.dart';
+import '../../../../core/services/symptom_correction_service.dart';
+import '../../../../core/services/tts_service.dart';
 import '../../../doctors/presentation/screens/speciality_search_screen.dart';
 import '../../domain/models/symptom_triage_model.dart';
 
@@ -14,25 +17,26 @@ class VoiceAiScreen extends StatefulWidget {
   State<VoiceAiScreen> createState() => _VoiceAiScreenState();
 }
 
-class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProviderStateMixin {
+class _VoiceAiScreenState extends State<VoiceAiScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late AnimationController _waveController;
 
   bool _isListening = false;
-  bool _isPlayingAudio = false;
-  String? _currentlySpeakingMsgId;
+  bool _isAnalyzing = false;
 
   final List<AiChatMessage> _messages = [
     const AiChatMessage(
       id: 'msg_welcome',
       sender: 'ai',
       text:
-          'স্বাগতম! আমি আপনার স্বাস্থ্যালয় এআই হেলথ অ্যাসিস্ট্যান্ট। আপনার যেকোনো শারীরিক লক্ষণ বা সমস্যা সম্পর্কে কথা বলতে পারেন অথবা লিখে জানাতে পারেন।',
+          'স্বাগতম! আমি আপনার স্বাস্থ্যালয় এআই হেলথ অ্যাসিস্ট্যান্ট। আপনার যেকোনো শারীরিক লক্ষণ সম্পর্কে কথা বলতে পারেন অথবা লিখে জানাতে পারেন। ওপেনরাউটার এআই এবং ভয়েস অ্যাসিস্ট্যান্ট সর্বদা প্রস্তুত।',
       timestamp: '08:00 AM',
       homeRemedies: [
-        'বাংলা ও ইংরেজি উভয় ভাষায় নির্ভুলভাবে লক্ষণ যাচাই করতে সক্ষম',
-        'জরুরি অবস্থায় তাৎক্ষণিক ৯৯৯ ও ১৬২৬৩ ডায়াল সহায়তা',
+        'বাংলা ও ইংরেজি উভয় ভাষায় ভয়েস ও টেক্সট ইনপুট সহায়তা',
+        'উন্নত ক্লিনিক্যাল ট্রায়াজিং ও ওপেনরাউটার এআই ইন্টিগ্রেশন',
+        'জরুরি অবস্থায় তাৎক্ষণিক ৯৯৯ ও ১৬২৬৩ ডায়াল সেবা',
       ],
     ),
   ];
@@ -44,10 +48,24 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
+
+    // Sync speech service state
+    SpeechService.instance.isListeningNotifier.addListener(_onSpeechListeningChanged);
+  }
+
+  void _onSpeechListeningChanged() {
+    if (mounted) {
+      setState(() {
+        _isListening = SpeechService.instance.isListening;
+      });
+    }
   }
 
   @override
   void dispose() {
+    SpeechService.instance.isListeningNotifier.removeListener(_onSpeechListeningChanged);
+    TtsService.instance.stop();
+    SpeechService.instance.stopListening();
     _waveController.dispose();
     _textController.dispose();
     _scrollController.dispose();
@@ -66,67 +84,118 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
     });
   }
 
-  void _handleUserQuery(String query) {
-    if (query.trim().isEmpty) return;
-    _textController.clear();
+  /// Handles incoming user query (either typed or spoken)
+  Future<void> _handleUserQuery(String rawQuery) async {
+    final queryText = rawQuery.trim();
+    if (queryText.isEmpty) return;
+
     final isBn = AppLocaleController.instance.isBangla;
 
+    // Apply symptom auto-correction & clinical expansion
+    final correctedQuery = SymptomCorrectionService.instance.correctSymptomText(
+      queryText,
+      isBn,
+    );
+
+    // Clear text field & stop listening
+    _textController.clear();
+    await SpeechService.instance.stopListening();
+
+    final now = DateTime.now();
+    final timeStr =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
     final userMsg = AiChatMessage(
-      id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+      id: 'user_${now.millisecondsSinceEpoch}',
       sender: 'user',
-      text: query,
-      timestamp: 'Just now',
+      text: correctedQuery,
+      timestamp: timeStr,
     );
 
     setState(() {
       _messages.add(userMsg);
-      _isListening = true;
+      _isAnalyzing = true;
     });
     _scrollToBottom();
 
-    // Clinical Triage Engine Analysis
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    try {
+      // Query OpenRouter AI (with automatic fallback to ClinicalTriageEngine)
+      final aiResponse = await OpenRouterService.instance.queryMedicalAssistant(
+        userQuery: correctedQuery,
+        isBangla: isBn,
+      );
+
       if (!mounted) return;
-      final aiResponse = ClinicalTriageEngine.analyzeSymptoms(query, isBn);
+
       setState(() {
-        _isListening = false;
+        _isAnalyzing = false;
         _messages.add(aiResponse);
-        _currentlySpeakingMsgId = aiResponse.id;
-        _isPlayingAudio = true;
       });
       _scrollToBottom();
 
-      // Stop audio simulation after 4 seconds
-      Future.delayed(const Duration(seconds: 4), () {
-        if (mounted) {
-          setState(() {
-            _isPlayingAudio = false;
-            _currentlySpeakingMsgId = null;
-          });
-        }
+      // Automatically speak the response
+      await TtsService.instance.toggleSpeak(
+        messageId: aiResponse.id,
+        text: aiResponse.text,
+        isBangla: isBn,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final fallbackResponse =
+          ClinicalTriageEngine.analyzeSymptoms(correctedQuery, isBn);
+      setState(() {
+        _isAnalyzing = false;
+        _messages.add(fallbackResponse);
       });
-    });
+      _scrollToBottom();
+    }
   }
 
-  void _toggleMic() {
+  /// Toggle Speech-to-Text Microphone
+  Future<void> _toggleMic() async {
+    final isBn = AppLocaleController.instance.isBangla;
+
+    // Stop TTS if speaking
+    await TtsService.instance.stop();
+
     if (_isListening) {
-      setState(() => _isListening = false);
-    } else {
-      final isBn = AppLocaleController.instance.isBangla;
-      // Simulate voice capture
-      final simulatedPrompts = isBn
-          ? [
-              'আমার বুকে প্রচণ্ড চাপ ও শ্বাসকষ্ট হচ্ছে',
-              'মাথাব্যথা ও হালকা জ্বর ২ দিন ধরে',
-              'খাবারের পর পেটে গ্যাস ও বুক জ্বালাপোড়া করে',
-            ]
-          : [
-              'I feel sudden chest tightness and shortness of breath',
-              'I have mild fever and sore throat for 2 days',
-              'Severe acidity and stomach burning after eating',
-            ];
-      final prompt = simulatedPrompts[DateTime.now().second % simulatedPrompts.length];
-      _handleUserQuery(prompt);
+      await SpeechService.instance.stopListening();
+      final capturedText = _textController.text.trim();
+      if (capturedText.isNotEmpty) {
+        await _handleUserQuery(capturedText);
+      }
+      return;
+    }
+
+    // Start listening
+    final started = await SpeechService.instance.startListening(
+      isBangla: isBn,
+      onResult: (recognizedWords, isFinal) {
+        if (!mounted) return;
+        setState(() {
+          _textController.text = recognizedWords;
+        });
+
+        // If recognition reached final silence, auto-correct & submit
+        if (isFinal && recognizedWords.trim().isNotEmpty) {
+          _handleUserQuery(recognizedWords);
+        }
+      },
+    );
+
+    if (!started && mounted) {
+      // In case device has no mic permission or speech recognition engine
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isBn
+                ? 'মাইক্রোফোন চালু করা সম্ভব হয়নি। অনুগ্রহ করে অনুমতি দিন অথবা লিখুন।'
+                : 'Could not access microphone. Please check permissions or type.',
+          ),
+          backgroundColor: AppColors.primaryNavy,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -165,7 +234,7 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
                   ),
                 ),
                 Text(
-                  isBn ? 'ক্লিনিক্যাল সিম্পটম ট্রায়াজিং' : 'Clinical Symptom Triage',
+                  isBn ? 'ওপেনরাউটার ক্লিনিক্যাল এআই' : 'OpenRouter Clinical AI',
                   style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                 ),
               ],
@@ -174,21 +243,27 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
         ),
         actions: [
           IconButton(
+            tooltip: isBn ? 'ভাষা পরিবর্তন' : 'Switch Language',
             icon: const Icon(Icons.language, color: AppColors.primaryNavy),
             onPressed: () {
               setState(() {
                 AppLocaleController.instance.toggleLanguage();
               });
+              // Stop speaking if playing on language change
+              TtsService.instance.stop();
             },
           ),
           IconButton(
+            tooltip: isBn ? 'রিসেট' : 'Reset Chat',
             icon: const Icon(Icons.refresh_rounded, color: AppColors.textSecondary),
             onPressed: () {
+              TtsService.instance.stop();
+              SpeechService.instance.stopListening();
               setState(() {
                 _messages.clear();
                 _messages.add(
                   AiChatMessage(
-                    id: 'msg_welcome',
+                    id: 'msg_welcome_${DateTime.now().millisecondsSinceEpoch}',
                     sender: 'ai',
                     text: isBn
                         ? 'চ্যাট হিস্ট্রি রিসেট করা হয়েছে। আপনার বর্তমান লক্ষণ বা স্বাস্থ্য সমস্যা সম্পর্কে বলুন।'
@@ -222,7 +297,7 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
             if (_isListening)
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0),
+                padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -233,16 +308,56 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.brandCyan.withOpacity(0.15),
+                          color: AppColors.sosRed.withOpacity(0.15),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.graphic_eq_rounded, color: AppColors.brandCyan, size: 24),
+                        child: const Icon(Icons.mic, color: AppColors.sosRed, size: 22),
                       ),
                     ),
                     const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        isBn
+                            ? 'আপনার কথা শুনছি... কথা শেষ হলে পাঠান বোতাম চাপুন'
+                            : 'Listening to your voice... Speak clearly',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryNavy,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Analyzing Indicator
+            if (_isAnalyzing)
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 20.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.brandCyan),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
                     Text(
-                      isBn ? 'আপনার ভয়েস বিশ্লেষণ করা হচ্ছে...' : 'Listening & analyzing clinical context...',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
+                      isBn
+                          ? 'ওপেনরাউটার এআই লক্ষণ বিশ্লেষণ করছে...'
+                          : 'OpenRouter AI analyzing clinical symptoms...',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.brandCyan,
+                      ),
                     ),
                   ],
                 ),
@@ -256,13 +371,22 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildPromptChip(isBn ? 'বুকে চাপ ও শ্বাসকষ্ট' : 'Chest pressure & breathless', isEmergency: true),
+                    _buildPromptChip(
+                      isBn ? 'বুকে চাপ ও তীব্র ব্যথা' : 'Chest pressure & severe pain',
+                      isEmergency: true,
+                    ),
                     const SizedBox(width: 8),
-                    _buildPromptChip(isBn ? 'হালকা জ্বর ও কাশি' : 'Mild fever & cough'),
+                    _buildPromptChip(
+                      isBn ? 'হালকা জ্বর ও খুসখুসে কাশি' : 'Mild fever & dry cough',
+                    ),
                     const SizedBox(width: 8),
-                    _buildPromptChip(isBn ? 'গ্যাস্ট্রিক ও বুক জ্বালাপোড়া' : 'Acidity & gastric burn'),
+                    _buildPromptChip(
+                      isBn ? 'খাবারের পর পেটে গ্যাস ও বুক জ্বালা' : 'Acidity & heartburn',
+                    ),
                     const SizedBox(width: 8),
-                    _buildPromptChip(isBn ? 'ডায়াবেটিস নিয়ন্ত্রণ পরামর্শ' : 'Diabetes diet guidance'),
+                    _buildPromptChip(
+                      isBn ? 'মাথাব্যথা ও চোখ ব্যথার সমস্যা' : 'Headache & eye strain',
+                    ),
                   ],
                 ),
               ),
@@ -286,7 +410,8 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: (_isListening ? AppColors.sosRed : AppColors.primaryNavy).withOpacity(0.25),
+                            color: (_isListening ? AppColors.sosRed : AppColors.primaryNavy)
+                                .withOpacity(0.25),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -313,12 +438,14 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
                       child: TextField(
                         controller: _textController,
                         decoration: InputDecoration(
-                          hintText: isBn ? 'লক্ষণ লিখুন বা মাইকে কথা বলুন...' : 'Type symptoms or tap mic...',
+                          hintText: isBn
+                              ? 'লক্ষণ লিখুন বা মাইকে কথা বলুন...'
+                              : 'Type symptoms or tap mic...',
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
                         ),
-                        onSubmitted: _handleUserQuery,
+                        onSubmitted: (val) => _handleUserQuery(val),
                       ),
                     ),
                   ),
@@ -347,9 +474,9 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
         child: Container(
           constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.primaryNavy,
-            borderRadius: const BorderRadius.only(
+            borderRadius: BorderRadius.only(
               topLeft: Radius.circular(16),
               topRight: Radius.circular(4),
               bottomLeft: Radius.circular(16),
@@ -364,239 +491,328 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
       );
     }
 
-    // AI Response Card
-    final isSpeaking = _currentlySpeakingMsgId == msg.id && _isPlayingAudio;
+    // AI Response Card with Reactive Listen Button
+    return ValueListenableBuilder<bool>(
+      valueListenable: TtsService.instance.isPlayingNotifier,
+      builder: (context, isPlaying, _) {
+        return ValueListenableBuilder<String?>(
+          valueListenable: TtsService.instance.currentMessageIdNotifier,
+          builder: (context, speakingId, _) {
+            final isSpeaking = isPlaying && speakingId == msg.id;
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.92),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: msg.isEmergency ? const Color(0xFFFEF2F2) : Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(4),
-            topRight: Radius.circular(16),
-            bottomLeft: Radius.circular(16),
-            bottomRight: Radius.circular(16),
-          ),
-          border: Border.all(
-            color: msg.isEmergency ? AppColors.sosRed.withOpacity(0.4) : AppColors.borderLight,
-            width: msg.isEmergency ? 1.5 : 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // AI Header with TTS Speaker
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      msg.isEmergency ? Icons.warning_rounded : Icons.health_and_safety_rounded,
-                      color: msg.isEmergency ? AppColors.sosRed : AppColors.brandCyan,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      msg.isEmergency
-                          ? (isBn ? 'জরুরি ট্রায়াজ এলার্ট (Emergency)' : 'Critical Emergency Alert')
-                          : (isBn ? 'স্বাস্থ্যালয় AI ট্রায়াজ' : 'Sasthyaloy AI Guidance'),
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.bold,
-                        color: msg.isEmergency ? AppColors.sosRed : AppColors.primaryNavy,
-                      ),
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                constraints:
+                    BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.92),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: msg.isEmergency ? const Color(0xFFFEF2F2) : Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                  border: Border.all(
+                    color: msg.isEmergency
+                        ? AppColors.sosRed.withOpacity(0.4)
+                        : AppColors.borderLight,
+                    width: msg.isEmergency ? 1.5 : 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      if (isSpeaking) {
-                        _isPlayingAudio = false;
-                        _currentlySpeakingMsgId = null;
-                      } else {
-                        _currentlySpeakingMsgId = msg.id;
-                        _isPlayingAudio = true;
-                      }
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isSpeaking ? AppColors.brandCyan.withOpacity(0.15) : AppColors.chipBackground,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // AI Header with Real Voice TTS Speaker
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(
-                          isSpeaking ? Icons.volume_up_rounded : Icons.volume_mute_rounded,
-                          size: 16,
-                          color: isSpeaking ? AppColors.brandCyan : AppColors.textSecondary,
+                        Row(
+                          children: [
+                            Icon(
+                              msg.isEmergency
+                                  ? Icons.warning_rounded
+                                  : Icons.health_and_safety_rounded,
+                              color: msg.isEmergency
+                                  ? AppColors.sosRed
+                                  : AppColors.brandCyan,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              msg.isEmergency
+                                  ? (isBn
+                                      ? 'জরুরি ট্রায়াজ এলার্ট (Emergency)'
+                                      : 'Critical Emergency Alert')
+                                  : (isBn
+                                      ? 'স্বাস্থ্যালয় AI ট্রায়াজ'
+                                      : 'Sasthyaloy AI Guidance'),
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.bold,
+                                color: msg.isEmergency
+                                    ? AppColors.sosRed
+                                    : AppColors.primaryNavy,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          isSpeaking ? 'Playing' : 'Listen',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: isSpeaking ? AppColors.brandCyan : AppColors.textSecondary,
+                        // Listen / Speaking Toggle Button
+                        InkWell(
+                          onTap: () {
+                            TtsService.instance.toggleSpeak(
+                              messageId: msg.id,
+                              text: msg.text,
+                              isBangla: isBn,
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSpeaking
+                                  ? AppColors.brandCyan.withOpacity(0.2)
+                                  : AppColors.chipBackground,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isSpeaking
+                                    ? AppColors.brandCyan
+                                    : AppColors.borderLight,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSpeaking
+                                      ? Icons.volume_up_rounded
+                                      : Icons.volume_down_rounded,
+                                  size: 16,
+                                  color: isSpeaking
+                                      ? AppColors.brandCyan
+                                      : AppColors.primaryNavy,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isSpeaking
+                                      ? (isBn ? 'শুনছেন...' : 'Playing...')
+                                      : (isBn ? 'কথা শুনুন' : 'Listen'),
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSpeaking
+                                        ? AppColors.brandCyan
+                                        : AppColors.primaryNavy,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-            // Message Body Text
-            Text(
-              msg.text,
-              style: TextStyle(
-                fontSize: 13.5,
-                color: msg.isEmergency ? const Color(0xFF991B1B) : AppColors.textPrimary,
-                height: 1.4,
-              ),
-            ),
-
-            // If Emergency: Display Immediate Actions
-            if (msg.isEmergency) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.sosRed.withOpacity(0.3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                    // Message Body Text
                     Text(
-                      isBn ? 'প্রাথমিক জরুরি পদক্ষেপ:' : 'Immediate First Aid:',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.sosRed),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      msg.firstAidAdvice ?? '',
-                      style: const TextStyle(fontSize: 11.5, color: AppColors.textPrimary, height: 1.35),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.sosRed,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      msg.text,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: msg.isEmergency
+                            ? const Color(0xFF991B1B)
+                            : AppColors.textPrimary,
+                        height: 1.4,
                       ),
-                      onPressed: () => _callEmergency('999', isBn),
-                      icon: const Icon(Icons.call, size: 16),
-                      label: const Text('৯৯৯ কল করুন', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryNavy,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      onPressed: () => _callEmergency('16263', isBn),
-                      icon: const Icon(Icons.support_agent, size: 16),
-                      label: const Text('১৬২৬৩ স্বাস্থ্য বাতায়ন', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
 
-            // If Routine: Home Remedies
-            if (!msg.isEmergency && msg.homeRemedies.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundLight,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isBn ? 'পরামর্শ ও সতর্কতা:' : 'Guidance & Advice:',
-                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: AppColors.primaryNavy),
-                    ),
-                    const SizedBox(height: 4),
-                    ...msg.homeRemedies.map((remedy) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 3.0),
-                        child: Row(
+                    // If Emergency: Display Immediate Actions
+                    if (msg.isEmergency) ...[
+                      const SizedBox(height: 12),
+                      if (msg.firstAidAdvice != null &&
+                          msg.firstAidAdvice!.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.sosRed.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isBn
+                                    ? 'প্রাথমিক জরুরি পদক্ষেপ:'
+                                    : 'Immediate First Aid:',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.sosRed,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                msg.firstAidAdvice!,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppColors.textPrimary,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.sosRed,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () => _callEmergency('999', isBn),
+                              icon: const Icon(Icons.call, size: 16),
+                              label: const Text(
+                                '৯৯৯ কল করুন',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryNavy,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onPressed: () => _callEmergency('16263', isBn),
+                              icon: const Icon(Icons.support_agent, size: 16),
+                              label: const Text(
+                                '১৬২৬৩ স্বাস্থ্য বাতায়ন',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+
+                    // If Routine: Home Remedies
+                    if (!msg.isEmergency && msg.homeRemedies.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.backgroundLight,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('• ', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.brandCyan)),
-                            Expanded(child: Text(remedy, style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary))),
+                            Text(
+                              isBn ? 'পরামর্শ ও সতর্কতা:' : 'Guidance & Advice:',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryNavy,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            ...msg.homeRemedies.map((remedy) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 3.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      '• ',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.brandCyan,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        remedy,
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
                           ],
                         ),
-                      );
-                    }),
+                      ),
+                    ],
+
+                    // Specialist Recommendation Action Button
+                    if (msg.recommendedSpecialist != null && !msg.isEmergency) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 38,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryNavy,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const SpecialitySearchScreen(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.calendar_today_rounded, size: 15),
+                          label: Text(
+                            isBn
+                                ? '${msg.recommendedSpecialist} বুক করুন'
+                                : 'Book ${msg.recommendedSpecialist}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-            ],
-
-            // Specialist Recommendation Action Button
-            if (msg.recommendedSpecialist != null && !msg.isEmergency) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 38,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryNavy,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const SpecialitySearchScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.calendar_today_rounded, size: 15),
-                  label: Text(
-                    isBn
-                        ? '${msg.recommendedSpecialist} বুক করুন'
-                        : 'Book ${msg.recommendedSpecialist}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -607,10 +823,14 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isEmergency ? AppColors.sosRed.withOpacity(0.08) : AppColors.chipBackground,
+          color: isEmergency
+              ? AppColors.sosRed.withOpacity(0.08)
+              : AppColors.chipBackground,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isEmergency ? AppColors.sosRed.withOpacity(0.3) : AppColors.borderLight,
+            color: isEmergency
+                ? AppColors.sosRed.withOpacity(0.3)
+                : AppColors.borderLight,
           ),
         ),
         child: Text(

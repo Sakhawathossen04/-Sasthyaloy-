@@ -37,13 +37,16 @@ def setup_android():
             dialer_queries = """
     <queries>
         <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
             <action android:name="android.intent.action.DIAL" />
             <data android:scheme="tel" />
         </intent>
     </queries>
 </manifest>"""
             content = content.replace('</manifest>', dialer_queries)
-            print("Added phone dialer queries to AndroidManifest.xml")
+            print("Added speech recognition and phone dialer queries to AndroidManifest.xml")
 
         if 'android:label="sasthyaloy"' in content:
             content = content.replace('android:label="sasthyaloy"', 'android:label="স্বাস্থ্যালয়"')

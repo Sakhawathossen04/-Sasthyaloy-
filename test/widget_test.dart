@@ -17,6 +17,11 @@ import 'package:sasthyaloy/features/menu/presentation/screens/menu_screen.dart';
 import 'package:sasthyaloy/features/auth/presentation/screens/edit_profile_screen.dart';
 import 'package:sasthyaloy/features/auth/presentation/widgets/profile_avatar_widget.dart';
 import 'package:sasthyaloy/core/services/emergency_call_service.dart';
+import 'package:sasthyaloy/core/services/symptom_correction_service.dart';
+import 'package:sasthyaloy/core/services/openrouter_service.dart';
+import 'package:sasthyaloy/core/services/tts_service.dart';
+import 'package:sasthyaloy/core/services/speech_service.dart';
+import 'package:sasthyaloy/features/voice_ai/presentation/screens/voice_ai_screen.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -186,5 +191,84 @@ void main() {
     expect(EmergencyCallService.cleanPhoneNumber('02-55165088'), '0255165088');
     expect(EmergencyCallService.cleanPhoneNumber('+880 1819-876543'), '+8801819876543');
     expect(EmergencyCallService.cleanPhoneNumber(' (02) 5516-5088 '), '0255165088');
+  });
+
+  test('Sasthyaloy symptom auto-correction service test', () {
+    final service = SymptomCorrectionService.instance;
+
+    // 1. Banglish phonetic correction
+    final banglishChest = service.correctSymptomText('buke betha', true);
+    expect(banglishChest.contains('বুকে'), true);
+
+    final banglishHead = service.correctSymptomText('matha betha', true);
+    expect(banglishHead.contains('মাথাব্যথা'), true);
+
+    // 2. English symptom normalization
+    final englishChest = service.correctSymptomText('chest pain', false);
+    expect(englishChest.toLowerCase().contains('chest pain'), true);
+
+    // 3. Filler word removal
+    final cleaned = service.correctSymptomText('um uh kashi', true);
+    expect(cleaned.contains('um'), false);
+    expect(cleaned.contains('কাশি'), true);
+  });
+
+  test('Sasthyaloy OpenRouter AI service test', () async {
+    final aiService = OpenRouterService.instance;
+
+    final emergencyResp = await aiService.queryMedicalAssistant(
+      userQuery: 'আমার বুকে তীব্র ব্যথা ও চাপ লাগছে',
+      isBangla: true,
+    );
+    expect(emergencyResp.isEmergency, true);
+
+    final routineResp = await aiService.queryMedicalAssistant(
+      userQuery: 'হালকা ঠান্ডা ও কাশি',
+      isBangla: true,
+    );
+    expect(routineResp.isEmergency, false);
+    expect(routineResp.homeRemedies.isNotEmpty, true);
+  });
+
+  test('Sasthyaloy TTS service text cleansing & state test', () async {
+    final cleaned = TtsService.cleanTextForSpeech(
+      '**জরুরি পরামর্শ:**\n- ১. পর্যাপ্ত পানি পান করুন\n• বিশ্রাম নিন',
+    );
+    expect(cleaned.contains('**'), false);
+    expect(cleaned.contains('- '), false);
+    expect(cleaned.contains('• '), false);
+
+    await TtsService.instance.toggleSpeak(
+      messageId: 'test_msg_101',
+      text: 'হ্যালো স্বাস্থ্যালয়',
+      isBangla: true,
+    );
+    expect(TtsService.instance.isPlaying, true);
+    expect(TtsService.instance.currentSpeakingId, 'test_msg_101');
+
+    await TtsService.instance.stop();
+    expect(TtsService.instance.isPlaying, false);
+    expect(TtsService.instance.currentSpeakingId, null);
+  });
+
+  test('Sasthyaloy Speech recognition service test', () async {
+    final speechService = SpeechService.instance;
+    final initSuccess = await speechService.initialize();
+    expect(initSuccess, true);
+
+    final started = await speechService.startListening(
+      onResult: (text, isFinal) {},
+      isBangla: true,
+    );
+    expect(started, true);
+    expect(speechService.isListening, true);
+
+    await speechService.stopListening();
+    expect(speechService.isListening, false);
+  });
+
+  testWidgets('Sasthyaloy Voice AI screen instantiation test', (tester) async {
+    const voiceScreen = VoiceAiScreen();
+    expect(voiceScreen.key, null);
   });
 }
