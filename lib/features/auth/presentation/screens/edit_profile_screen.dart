@@ -379,7 +379,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ],
                             ),
                           );
-                        }).toList>,
+                        }).toList(),
                         onChanged: (val) {
                           if (val != null) setState(() => _selectedBloodGroup = val);
                         },
