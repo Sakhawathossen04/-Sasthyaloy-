@@ -235,15 +235,13 @@ Your responsibilities:
       text: cleaned,
       timestamp: timeStr,
       isEmergency: isEmergency,
-      isRedAlert: isEmergency,
-      emergencyNotice: isEmergency
+      recommendedSpecialist: suggestedDoc,
+      firstAidAdvice: isEmergency
           ? (isBangla
-              ? 'এটি একটি সম্ভাব্য জরুরি অবস্থা! কালক্ষেপণ না করে দ্রুত হাসপাতালে যোগাযোগ করুন বা ৯৯৯ / ১৬২৬৩ নম্বরে ডায়াল করুন।'
-              : 'Potential Medical Emergency! Seek immediate hospital care or dial 999 / 16263.')
+              ? '১. রোগীকে শান্ত ও আরামদায়ক অবস্থায় বসিয়ে দিন।\n২. দ্রুত ৯৯৯ অথবা ১৬২৬৩ জরুরি হেল্পলাইনে কল করুন।'
+              : '1. Keep patient in a calm and rested posture.\n2. Immediately contact 999 or 16263 emergency helpline.')
           : null,
       homeRemedies: remedies,
-      suggestedDoctorType: suggestedDoc,
-      suggestedHospital: suggestedHosp,
     );
   }
 }
