@@ -90,7 +90,6 @@ jobs:
             build/app/outputs/flutter-apk/*.apk
             build/app/outputs/**/*.apk
           retention-days: 14
-          retention-days: 14
 
       - name: "১১. গিটহাব রিলিজ পাবলিশ (Create GitHub Release if Tagged)"
         if: startsWith(github.ref, 'refs/tags/v')
