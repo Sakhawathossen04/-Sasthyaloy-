@@ -14,7 +14,16 @@ class StorageService {
   static final Map<String, dynamic> _memoryCache = {};
   static File? _storageFile;
 
+  static bool get _isTestEnv {
+    try {
+      return Platform.environment.containsKey('FLUTTER_TEST');
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<void> init() async {
+    if (kIsWeb || _isTestEnv) return;
     try {
       _storageFile = _resolveStorageFile();
       if (_storageFile != null && _storageFile!.existsSync()) {
@@ -29,37 +38,42 @@ class StorageService {
     }
   }
 
-  static File _resolveStorageFile() {
-    final candidatePaths = [
-      '/data/user/0/com.sasthyaloy/files',
-      '/data/data/com.sasthyaloy/files',
-      '/data/user/0/com.sasthyaloy.sasthyaloy/files',
-      '/data/data/com.sasthyaloy.sasthyaloy/files',
-    ];
+  static File? _resolveStorageFile() {
+    if (kIsWeb || _isTestEnv) return null;
 
-    for (final path in candidatePaths) {
-      try {
-        final dir = Directory(path);
-        if (!dir.existsSync()) {
-          dir.createSync(recursive: true);
-        }
-        final testFile = File('${dir.path}/.test_storage');
-        testFile.writeAsStringSync('1');
-        testFile.deleteSync();
-        return File('${dir.path}/sasthyaloy_storage.json');
-      } catch (_) {}
-    }
-
-    // Fallback for tests, desktop, temp environments
     try {
+      if (Platform.isAndroid) {
+        final candidatePaths = [
+          '/data/user/0/com.sasthyaloy/files',
+          '/data/data/com.sasthyaloy/files',
+          '/data/user/0/com.sasthyaloy.sasthyaloy/files',
+          '/data/data/com.sasthyaloy.sasthyaloy/files',
+        ];
+
+        for (final path in candidatePaths) {
+          try {
+            final dir = Directory(path);
+            if (!dir.existsSync()) {
+              dir.createSync(recursive: true);
+            }
+            final testFile = File('${dir.path}/.test_storage');
+            testFile.writeAsStringSync('1');
+            testFile.deleteSync();
+            return File('${dir.path}/sasthyaloy_storage.json');
+          } catch (_) {}
+        }
+      }
+
+      // Fallback for desktop / other environments
       final tempDir = Directory.systemTemp;
       return File('${tempDir.path}/sasthyaloy_storage.json');
     } catch (_) {
-      return File('sasthyaloy_storage.json');
+      return null;
     }
   }
 
   static void _persistToFile() {
+    if (kIsWeb || _isTestEnv) return;
     try {
       _storageFile ??= _resolveStorageFile();
       _storageFile?.writeAsStringSync(jsonEncode(_memoryCache));

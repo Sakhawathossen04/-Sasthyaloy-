@@ -15,6 +15,8 @@ import 'package:sasthyaloy/features/navigation/presentation/screens/main_shell_s
 import 'package:sasthyaloy/features/onboarding/presentation/screens/language_selection_screen.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('Sasthyaloy brand identity test', () {
     expect(AppStrings.appNameBn, 'স্বাস্থ্যালয়');
     expect(AppStrings.appNameEn, 'Sasthyaloy');
@@ -115,7 +117,7 @@ void main() {
     expect(receipt.paymentMethod, 'bKash');
   });
 
-  testWidgets('Sasthyaloy teleconsultation screens instantiation test', (tester) async {
+  test('Sasthyaloy teleconsultation screens instantiation test', () {
     const paymentScreen = PaymentCheckoutScreen(
       appointmentId: 'apt_101',
       doctorNameBn: 'ডা. টেস্ট',
@@ -145,7 +147,7 @@ void main() {
     expect(summaryScreen.callDuration, '12:35');
   });
 
-  testWidgets('Sasthyaloy back navigation & PopScope shell tests', (tester) async {
+  test('Sasthyaloy back navigation & PopScope shell tests', () {
     const shellScreen = MainShellScreen(initialIndex: 0);
     expect(shellScreen.initialIndex, 0);
 
