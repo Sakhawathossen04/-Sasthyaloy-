@@ -50,6 +50,7 @@ jobs:
           rm -rf android
           flutter create . --org com.sasthyaloy --project-name sasthyaloy --platforms=android
           chmod +x android/gradlew
+          python3 scripts/setup_android.py
 
       - name: "৬. ফ্ল্যাটার ডিপেন্ডেন্সি ডাউনলোড (flutter pub get)"
         run: flutter pub get

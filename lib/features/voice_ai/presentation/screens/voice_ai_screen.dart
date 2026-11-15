@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/localization/app_locale_controller.dart';
+import '../../../../core/services/emergency_call_service.dart';
 import '../../../doctors/presentation/screens/speciality_search_screen.dart';
 import '../../domain/models/symptom_triage_model.dart';
 
@@ -625,14 +626,10 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
   }
 
   void _callEmergency(String number, bool isBn) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.primaryNavy,
-        behavior: SnackBarBehavior.floating,
-        content: Text(
-          isBn ? '$number নম্বরে সরাসরি জরুরি কল সংযোগ করা হচ্ছে...' : 'Initiating immediate emergency call to $number...',
-        ),
-      ),
+    EmergencyCallService.instance.makeEmergencyCall(
+      context: context,
+      phoneNumber: number,
+      isBangla: isBn,
     );
   }
 }

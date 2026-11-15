@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/localization/app_locale_controller.dart';
+import '../../../../core/services/emergency_call_service.dart';
 import '../../../auth/domain/controllers/auth_controller.dart';
 import '../../../auth/presentation/screens/phone_auth_screen.dart';
 import '../../../doctors/presentation/screens/speciality_search_screen.dart';
@@ -1083,7 +1084,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 phone: '999',
                 icon: Icons.local_police_rounded,
                 color: Colors.red.shade700,
-                onTap: () => _simulateCall('999'),
+                onTap: () => _handleEmergencyCall('999'),
               ),
               const SizedBox(height: 10),
               _buildSosTile(
@@ -1091,7 +1092,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 phone: '16263',
                 icon: Icons.health_and_safety_rounded,
                 color: AppColors.emeraldGreen,
-                onTap: () => _simulateCall('16263'),
+                onTap: () => _handleEmergencyCall('16263'),
               ),
               const SizedBox(height: 10),
               _buildSosTile(
@@ -1099,7 +1100,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 phone: '01811458524',
                 icon: Icons.airport_shuttle_rounded,
                 color: Colors.orange.shade800,
-                onTap: () => _simulateCall('01811458524'),
+                onTap: () => _handleEmergencyCall('01811458524'),
               ),
               const SizedBox(height: 10),
               _buildSosTile(
@@ -1107,7 +1108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 phone: '02-55165088',
                 icon: Icons.local_hospital_rounded,
                 color: AppColors.brandCyan,
-                onTap: () => _simulateCall('02-55165088'),
+                onTap: () => _handleEmergencyCall('02-55165088'),
               ),
               const SizedBox(height: 16),
             ],
@@ -1158,20 +1159,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _simulateCall(String number) {
+  void _handleEmergencyCall(String number) {
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.primaryNavy,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        content: Text(
-          AppLocaleController.instance.isBangla
-              ? '$number নম্বরে কল সংযোগ করা হচ্ছে...'
-              : 'Initiating call to $number...',
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
+    EmergencyCallService.instance.makeEmergencyCall(
+      context: context,
+      phoneNumber: number,
+      isBangla: AppLocaleController.instance.isBangla,
     );
   }
 

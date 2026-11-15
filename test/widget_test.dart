@@ -16,6 +16,7 @@ import 'package:sasthyaloy/features/onboarding/presentation/screens/language_sel
 import 'package:sasthyaloy/features/menu/presentation/screens/menu_screen.dart';
 import 'package:sasthyaloy/features/auth/presentation/screens/edit_profile_screen.dart';
 import 'package:sasthyaloy/features/auth/presentation/widgets/profile_avatar_widget.dart';
+import 'package:sasthyaloy/core/services/emergency_call_service.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -176,5 +177,14 @@ void main() {
       expect(avatar.titleBn.isNotEmpty, true);
       expect(avatar.titleEn.isNotEmpty, true);
     }
+  });
+
+  test('Sasthyaloy emergency call phone cleaner test', () {
+    expect(EmergencyCallService.cleanPhoneNumber('999'), '999');
+    expect(EmergencyCallService.cleanPhoneNumber('16263'), '16263');
+    expect(EmergencyCallService.cleanPhoneNumber('01811458524'), '01811458524');
+    expect(EmergencyCallService.cleanPhoneNumber('02-55165088'), '0255165088');
+    expect(EmergencyCallService.cleanPhoneNumber('+880 1819-876543'), '+8801819876543');
+    expect(EmergencyCallService.cleanPhoneNumber(' (02) 5516-5088 '), '0255165088');
   });
 }
