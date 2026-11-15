@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sasthyaloy/core/constants/app_strings.dart';
 import 'package:sasthyaloy/core/services/storage_service.dart';
 import 'package:sasthyaloy/features/doctors/domain/models/doctor_model.dart';
@@ -16,13 +15,6 @@ import 'package:sasthyaloy/features/navigation/presentation/screens/main_shell_s
 import 'package:sasthyaloy/features/onboarding/presentation/screens/language_selection_screen.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUp(() {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    SharedPreferences.setMockInitialValues({});
-  });
-
   test('Sasthyaloy brand identity test', () {
     expect(AppStrings.appNameBn, 'স্বাস্থ্যালয়');
     expect(AppStrings.appNameEn, 'Sasthyaloy');
