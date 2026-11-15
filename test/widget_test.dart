@@ -267,6 +267,62 @@ void main() {
     expect(speechService.isListening, false);
   });
 
+  test('Sasthyaloy clinical triage headache vs fever vs greeting test', () {
+    // 1. Headache should NEVER return fever or flu advice
+    final headacheResult = ClinicalTriageEngine.analyzeSymptoms('আমার তীব্র মাথাব্যথা করছে', true);
+    expect(headacheResult.isEmergency, false);
+    expect(headacheResult.recommendedSpecialist?.contains('নিউরোলজিস্ট') ?? false, true);
+    expect(headacheResult.text.contains('মাথাব্যথা'), true);
+    expect(headacheResult.text.contains('১০১°F'), false);
+
+    // 2. Greeting should return polite welcome
+    final greetingResult = ClinicalTriageEngine.analyzeSymptoms('hi', true);
+    expect(greetingResult.text.contains('স্বাগতম'), true);
+
+    // 3. Image attachment triage
+    final imageResult = ClinicalTriageEngine.analyzeSymptoms(
+      'ত্বকে র‍্যাশ উঠেছে',
+      true,
+      imagePath: 'test_path.jpg',
+    );
+    expect(imageResult.recommendedSpecialist?.contains('চর্ম') ?? false, true);
+  });
+
+  test('Sasthyaloy persistent chat session storage test', () async {
+    const session = ChatSessionModel(
+      id: 'session_test_999',
+      title: 'মাথাব্যথা পরামর্শ',
+      createdAt: '2026-11-15T15:30:00Z',
+      updatedAt: '2026-11-15T15:30:00Z',
+      messages: [
+        AiChatMessage(
+          id: 'msg_1',
+          sender: 'user',
+          text: 'আমার তীব্র মাথাব্যথা',
+          timestamp: '03:30 PM',
+        ),
+        AiChatMessage(
+          id: 'msg_2',
+          sender: 'ai',
+          text: 'বিশ্রাম নিন ও পানি পান করুন',
+          timestamp: '03:30 PM',
+        ),
+      ],
+    );
+
+    await StorageService.saveChatSession(session);
+    final sessions = StorageService.getChatSessions();
+    expect(sessions.any((s) => s.id == 'session_test_999'), true);
+
+    final retrieved = sessions.firstWhere((s) => s.id == 'session_test_999');
+    expect(retrieved.title, 'মাথাব্যথা পরামর্শ');
+    expect(retrieved.messages.length, 2);
+
+    await StorageService.deleteChatSession('session_test_999');
+    final afterDelete = StorageService.getChatSessions();
+    expect(afterDelete.any((s) => s.id == 'session_test_999'), false);
+  });
+
   testWidgets('Sasthyaloy Voice AI screen instantiation test', (tester) async {
     const voiceScreen = VoiceAiScreen();
     expect(voiceScreen.key, null);

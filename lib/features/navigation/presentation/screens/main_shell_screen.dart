@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/localization/app_locale_controller.dart';
+import '../../../../core/services/tts_service.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 import '../../../my_health/presentation/screens/my_health_screen.dart';
 import '../../../voice_ai/presentation/screens/voice_ai_screen.dart';
@@ -43,6 +44,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   void _onTabSelected(int index) {
     if (_currentIndex == index) return;
+    TtsService.instance.stop();
     setState(() {
       _currentIndex = index;
       _tabHistory.remove(index);
@@ -51,6 +53,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _handleBackNavigation() {
+    TtsService.instance.stop();
     // 1. If user switched across tabs, pop previous tab from history
     if (_tabHistory.length > 1) {
       setState(() {

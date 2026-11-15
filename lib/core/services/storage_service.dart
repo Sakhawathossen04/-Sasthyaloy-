@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../../features/auth/domain/models/user_profile_model.dart';
+import '../../features/voice_ai/domain/models/symptom_triage_model.dart';
 
 class StorageService {
   StorageService._();
@@ -118,6 +119,53 @@ class StorageService {
   static Future<void> clearAuthSession() async {
     _memoryCache[_keyIsLoggedIn] = false;
     _memoryCache.remove(_keyUserProfile);
+    _persistToFile();
+  }
+
+  // --- Persistent Chat Session Storage (OpenAI / Gemini style) ---
+  static const String _keyChatSessions = 'sasthyaloy_chat_sessions_json';
+
+  static List<ChatSessionModel> getChatSessions() {
+    final raw = _memoryCache[_keyChatSessions];
+    if (raw == null) return [];
+    try {
+      if (raw is List) {
+        return raw
+            .map((e) => ChatSessionModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      } else if (raw is String && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw) as List<dynamic>;
+        return decoded
+            .map((e) => ChatSessionModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Error reading chat sessions: $e');
+    }
+    return [];
+  }
+
+  static Future<void> saveChatSession(ChatSessionModel session) async {
+    final sessions = getChatSessions();
+    final idx = sessions.indexWhere((s) => s.id == session.id);
+    if (idx >= 0) {
+      sessions[idx] = session;
+    } else {
+      sessions.insert(0, session);
+    }
+    _memoryCache[_keyChatSessions] = sessions.map((s) => s.toJson()).toList();
+    _persistToFile();
+  }
+
+  static Future<void> deleteChatSession(String sessionId) async {
+    final sessions = getChatSessions();
+    sessions.removeWhere((s) => s.id == sessionId);
+    _memoryCache[_keyChatSessions] = sessions.map((s) => s.toJson()).toList();
+    _persistToFile();
+  }
+
+  static Future<void> clearAllChatSessions() async {
+    _memoryCache.remove(_keyChatSessions);
     _persistToFile();
   }
 }
