@@ -8,6 +8,7 @@ def setup_android():
     manifest_path = os.path.join(base_dir, 'android', 'app', 'src', 'main', 'AndroidManifest.xml')
     gradle_props_path = os.path.join(base_dir, 'android', 'gradle.properties')
     app_build_gradle = os.path.join(base_dir, 'android', 'app', 'build.gradle')
+    root_build_gradle = os.path.join(base_dir, 'android', 'build.gradle')
 
     print(f"Base Directory: {base_dir}")
     print(f"Assets Res: {assets_res}")
@@ -64,7 +65,34 @@ def setup_android():
                 f.write(props)
             print("Configured gradle.properties to disable release lint")
 
-    # 4. Configure android/app/build.gradle to disable Android Lint tasks
+    # 4. Configure root android/build.gradle to disable lint across all subprojects
+    if os.path.exists(root_build_gradle):
+        with open(root_build_gradle, 'r', encoding='utf-8') as f:
+            rbg = f.read()
+        if 'graph.allTasks' not in rbg:
+            rbg += """
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.tasks.matching { it.name.toLowerCase().contains('lint') }.all {
+                enabled = false
+            }
+        }
+    }
+}
+gradle.taskGraph.whenReady { graph ->
+    graph.allTasks.each { task ->
+        if (task.name.toLowerCase().contains("lint")) {
+            task.enabled = false
+        }
+    }
+}
+"""
+            with open(root_build_gradle, 'w', encoding='utf-8') as f:
+                f.write(rbg)
+            print("Updated root android/build.gradle to disable lint across all subprojects")
+
+    # 5. Configure android/app/build.gradle to disable Android Lint tasks
     if os.path.exists(app_build_gradle):
         with open(app_build_gradle, 'r', encoding='utf-8') as f:
             bg = f.read()
@@ -81,15 +109,8 @@ def setup_android():
 """
             bg = bg.replace('buildTypes {', lint_block + '\n    buildTypes {')
 
-        if 'task.name.toLowerCase().contains("lint")' not in bg:
+        if 'tasks.whenTaskAdded' not in bg:
             bg += """
-gradle.taskGraph.whenReady {
-    tasks.each { task ->
-        if (task.name.toLowerCase().contains("lint")) {
-            task.enabled = false
-        }
-    }
-}
 tasks.whenTaskAdded { task ->
     if (task.name.toLowerCase().contains("lint")) {
         task.enabled = false

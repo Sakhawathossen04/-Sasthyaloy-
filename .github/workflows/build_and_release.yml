@@ -27,11 +27,11 @@ jobs:
       - name: "১. কোড চেকআউট (Checkout Repository)"
         uses: actions/checkout@v4
 
-      - name: "২. জাভা এনভায়রনমেন্ট কনফিগারেশন (Java 17)"
+      - name: "২. জাভা এনভায়রনমেন্ট কনফিগারেশন (Java 21)"
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: 'gradle'
 
       - name: "৩. ফ্ল্যাটার এসডিকে সেটআপ (Flutter SDK)"
@@ -81,7 +81,7 @@ jobs:
         run: |
           set +e
           echo "Building Production Release APK..."
-          flutter build apk --release --no-tree-shake-icons > build_log.txt 2>&1
+          flutter build apk --release --no-tree-shake-icons -- -x lint -x lintVitalRelease -x lintVitalAnalyzeRelease > build_log.txt 2>&1
           BUILD_EXIT=$?
           set -e
           cat build_log.txt

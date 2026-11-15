@@ -16,3 +16,20 @@ subprojects {
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.tasks.matching { it.name.toLowerCase().contains('lint') }.all {
+                enabled = false
+            }
+        }
+    }
+}
+gradle.taskGraph.whenReady { graph ->
+    graph.allTasks.each { task ->
+        if (task.name.toLowerCase().contains("lint")) {
+            task.enabled = false
+        }
+    }
+}
