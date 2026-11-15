@@ -58,7 +58,12 @@ jobs:
         run: flutter analyze || true
 
       - name: "৮. ইউনিট টেস্ট (Smoke Test)"
-        run: flutter test --reporter expanded
+        run: |
+          flutter test --reporter expanded 2>&1 | tee test_log.txt || true
+          echo "### Unit Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -n 100 test_log.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: "৯. অ্যান্ড্রয়েড রিলিজ APK বিল্ড (Build Android Release APK)"
         run: |
