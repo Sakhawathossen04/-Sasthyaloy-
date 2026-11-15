@@ -28,7 +28,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // User State: Guest vs Logged In
   bool get _isLoggedIn => AuthController.instance.isLoggedIn;
-  String get _userName => AuthController.instance.currentUser.nameEn;
+  String get _userName {
+    final user = AuthController.instance.currentUser;
+    final isBn = AppLocaleController.instance.isBangla;
+    if (isBn && user.nameBn.isNotEmpty) return user.nameBn;
+    if (user.nameEn.isNotEmpty) return user.nameEn;
+    if (user.nameBn.isNotEmpty) return user.nameBn;
+    return isBn ? 'ব্যবহারকারী' : 'User';
+  }
 
   // Wellness Tracking Connected State
   bool _isWellnessConnected = false;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/app_locale_controller.dart';
+import '../../../../core/services/storage_service.dart';
 import '../../../navigation/presentation/screens/main_shell_screen.dart';
 
 class OnboardingCarouselScreen extends StatefulWidget {
@@ -14,7 +15,9 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  void _finishOnboarding() {
+  void _finishOnboarding() async {
+    await StorageService.setCompletedOnboarding(true);
+    if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const MainShellScreen()),
       (route) => false,

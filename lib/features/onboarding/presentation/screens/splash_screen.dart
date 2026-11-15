@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/localization/app_locale_controller.dart';
+import '../../../../core/services/storage_service.dart';
+import '../../../navigation/presentation/screens/main_shell_screen.dart';
 import 'language_selection_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -36,11 +38,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _animController.forward();
 
-    // Auto navigate after 2.5 seconds
-    _navigationTimer = Timer(const Duration(milliseconds: 2500), () {
+    // Auto navigate after splash animation
+    _navigationTimer = Timer(const Duration(milliseconds: 2000), () {
       if (mounted) {
+        final hasCompleted = StorageService.hasCompletedOnboarding();
+        final targetScreen = hasCompleted
+            ? const MainShellScreen()
+            : const LanguageSelectionScreen();
+
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
+          MaterialPageRoute(builder: (_) => targetScreen),
         );
       }
     });

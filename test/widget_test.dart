@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sasthyaloy/core/constants/app_strings.dart';
+import 'package:sasthyaloy/core/services/storage_service.dart';
 import 'package:sasthyaloy/features/doctors/domain/models/doctor_model.dart';
 import 'package:sasthyaloy/features/appointments/domain/models/appointment_model.dart';
 import 'package:sasthyaloy/features/auth/domain/controllers/auth_controller.dart';
+import 'package:sasthyaloy/features/auth/domain/models/user_profile_model.dart';
 import 'package:sasthyaloy/features/my_health/domain/controllers/health_record_controller.dart';
 import 'package:sasthyaloy/features/voice_ai/domain/models/symptom_triage_model.dart';
 import 'package:sasthyaloy/features/teleconsultation/domain/models/payment_model.dart';
@@ -13,6 +16,10 @@ import 'package:sasthyaloy/features/navigation/presentation/screens/main_shell_s
 import 'package:sasthyaloy/features/onboarding/presentation/screens/language_selection_screen.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   test('Sasthyaloy brand identity test', () {
     expect(AppStrings.appNameBn, 'স্বাস্থ্যালয়');
     expect(AppStrings.appNameEn, 'Sasthyaloy');
@@ -47,10 +54,39 @@ void main() {
     expect(AppointmentStore.instance.appointments.value.length, initialCount + 1);
   });
 
-  test('Sasthyaloy auth controller test', () {
+  test('Sasthyaloy auth controller initial blank state & dynamic profile test', () {
     final controller = AuthController.instance;
-    expect(controller.currentUser.nameEn, 'Md. Sakhawat Hossen');
+
+    // 1. Initial / Logged out state is blank
+    controller.signOut();
+    expect(controller.isLoggedIn, false);
+    expect(controller.currentUser.nameEn, '');
+    expect(controller.currentUser.familyMembers.isEmpty, true);
+
+    // 2. Dynamic sign in / profile creation
+    controller.signInWithPhone('+8801700000000', nameBn: 'শাখাওয়াত হোসেন', nameEn: 'Sakhawat Hossen');
     expect(controller.isLoggedIn, true);
+    expect(controller.currentUser.phone, '+8801700000000');
+    expect(controller.currentUser.nameEn, 'Sakhawat Hossen');
+
+    // 3. Dynamic family member addition
+    const member = FamilyMember(
+      id: 'fam_test',
+      nameBn: 'নুসরাত জাহান',
+      nameEn: 'Nusrat Jahan',
+      relationBn: 'স্ত্রী',
+      relationEn: 'Spouse',
+      age: 25,
+      bloodGroup: 'O+',
+    );
+    controller.addFamilyMember(member);
+    expect(controller.currentUser.familyMembers.length, 1);
+    expect(controller.currentUser.familyMembers.first.nameEn, 'Nusrat Jahan');
+  });
+
+  test('Sasthyaloy storage service persistent session test', () {
+    StorageService.setCompletedOnboarding(true);
+    expect(StorageService.hasCompletedOnboarding(), true);
   });
 
   test('Sasthyaloy health records & vitals test', () {

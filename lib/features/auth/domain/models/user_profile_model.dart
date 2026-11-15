@@ -16,6 +16,26 @@ class FamilyMember {
     required this.age,
     required this.bloodGroup,
   });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'nameBn': nameBn,
+        'nameEn': nameEn,
+        'relationBn': relationBn,
+        'relationEn': relationEn,
+        'age': age,
+        'bloodGroup': bloodGroup,
+      };
+
+  factory FamilyMember.fromJson(Map<String, dynamic> json) => FamilyMember(
+        id: json['id'] as String? ?? '',
+        nameBn: json['nameBn'] as String? ?? '',
+        nameEn: json['nameEn'] as String? ?? '',
+        relationBn: json['relationBn'] as String? ?? '',
+        relationEn: json['relationEn'] as String? ?? '',
+        age: (json['age'] is num) ? (json['age'] as num).toInt() : 0,
+        bloodGroup: json['bloodGroup'] as String? ?? 'N/A',
+      );
 }
 
 class UserProfileModel {
@@ -34,6 +54,7 @@ class UserProfileModel {
   final bool isLoggedIn;
   final List<FamilyMember> familyMembers;
   final String activeMemberId;
+  final String avatarId;
 
   const UserProfileModel({
     required this.id,
@@ -51,6 +72,7 @@ class UserProfileModel {
     required this.isLoggedIn,
     required this.familyMembers,
     required this.activeMemberId,
+    this.avatarId = 'avatar_1',
   });
 
   UserProfileModel copyWith({
@@ -69,6 +91,7 @@ class UserProfileModel {
     bool? isLoggedIn,
     List<FamilyMember>? familyMembers,
     String? activeMemberId,
+    String? avatarId,
   }) {
     return UserProfileModel(
       id: id ?? this.id,
@@ -86,13 +109,56 @@ class UserProfileModel {
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
       familyMembers: familyMembers ?? this.familyMembers,
       activeMemberId: activeMemberId ?? this.activeMemberId,
+      avatarId: avatarId ?? this.avatarId,
     );
   }
 
-  static UserProfileModel get guestUser => const UserProfileModel(
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'nameBn': nameBn,
+        'nameEn': nameEn,
+        'phone': phone,
+        'email': email,
+        'age': age,
+        'genderBn': genderBn,
+        'genderEn': genderEn,
+        'bloodGroup': bloodGroup,
+        'emergencyContact': emergencyContact,
+        'addressBn': addressBn,
+        'addressEn': addressEn,
+        'isLoggedIn': isLoggedIn,
+        'familyMembers': familyMembers.map((m) => m.toJson()).toList(),
+        'activeMemberId': activeMemberId,
+        'avatarId': avatarId,
+      };
+
+  factory UserProfileModel.fromJson(Map<String, dynamic> json) => UserProfileModel(
+        id: json['id'] as String? ?? 'GUEST-00',
+        nameBn: json['nameBn'] as String? ?? '',
+        nameEn: json['nameEn'] as String? ?? '',
+        phone: json['phone'] as String? ?? '',
+        email: json['email'] as String? ?? '',
+        age: (json['age'] is num) ? (json['age'] as num).toInt() : 0,
+        genderBn: json['genderBn'] as String? ?? 'অনির্দিষ্ট',
+        genderEn: json['genderEn'] as String? ?? 'Unspecified',
+        bloodGroup: json['bloodGroup'] as String? ?? 'N/A',
+        emergencyContact: json['emergencyContact'] as String? ?? '',
+        addressBn: json['addressBn'] as String? ?? '',
+        addressEn: json['addressEn'] as String? ?? '',
+        isLoggedIn: json['isLoggedIn'] as bool? ?? false,
+        familyMembers: (json['familyMembers'] as List<dynamic>?)
+                ?.map((item) => FamilyMember.fromJson(item as Map<String, dynamic>))
+                .toList() ??
+            [],
+        activeMemberId: json['activeMemberId'] as String? ?? 'self',
+        avatarId: json['avatarId'] as String? ?? 'avatar_1',
+      );
+
+  /// Initially blank / logged-out user (Guest)
+  static UserProfileModel get blankGuest => const UserProfileModel(
         id: 'GUEST-00',
-        nameBn: 'অতিথি ব্যবহারকারী',
-        nameEn: 'Guest User',
+        nameBn: '',
+        nameEn: '',
         phone: '',
         email: '',
         age: 0,
@@ -100,14 +166,19 @@ class UserProfileModel {
         genderEn: 'Unspecified',
         bloodGroup: 'N/A',
         emergencyContact: '',
-        addressBn: 'ঢাকা, বাংলাদেশ',
-        addressEn: 'Dhaka, Bangladesh',
+        addressBn: '',
+        addressEn: '',
         isLoggedIn: false,
         familyMembers: [],
         activeMemberId: 'self',
+        avatarId: 'avatar_1',
       );
 
-  static UserProfileModel get defaultUser => const UserProfileModel(
+  /// Alias for backward compatibility
+  static UserProfileModel get guestUser => blankGuest;
+
+  /// Sample demo user for testing/seeding if needed
+  static UserProfileModel get sampleDemoUser => const UserProfileModel(
         id: 'PT-98421',
         nameBn: 'মোঃ শাকাওয়াত হোসেন',
         nameEn: 'Md. Sakhawat Hossen',
@@ -121,35 +192,8 @@ class UserProfileModel {
         addressBn: 'বাড়ি #১২, রোড #০৫, ধানমন্ডি, ঢাকা',
         addressEn: 'House #12, Road #05, Dhanmondi, Dhaka',
         isLoggedIn: true,
-        familyMembers: [
-          FamilyMember(
-            id: 'self',
-            nameBn: 'মোঃ শাকাওয়াত হোসেন (নিজে)',
-            nameEn: 'Md. Sakhawat Hossen (Self)',
-            relationBn: 'নিজে',
-            relationEn: 'Self',
-            age: 28,
-            bloodGroup: 'B+',
-          ),
-          FamilyMember(
-            id: 'fam_1',
-            nameBn: 'নুসরাত জাহান (স্ত্রী)',
-            nameEn: 'Nusrat Jahan (Spouse)',
-            relationBn: 'স্ত্রী',
-            relationEn: 'Spouse',
-            age: 25,
-            bloodGroup: 'O+',
-          ),
-          FamilyMember(
-            id: 'fam_2',
-            nameBn: 'আয়ান হোসেন (সন্তান)',
-            nameEn: 'Ayaan Hossen (Child)',
-            relationBn: 'সন্তান',
-            relationEn: 'Child',
-            age: 3,
-            bloodGroup: 'B+',
-          ),
-        ],
+        familyMembers: [],
         activeMemberId: 'self',
+        avatarId: 'avatar_1',
       );
 }

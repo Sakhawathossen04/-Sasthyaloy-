@@ -4,6 +4,7 @@ import '../../../../core/localization/app_locale_controller.dart';
 import '../../../auth/domain/controllers/auth_controller.dart';
 import '../../../auth/domain/models/user_profile_model.dart';
 import '../../../auth/presentation/screens/edit_profile_screen.dart';
+import '../../../auth/presentation/widgets/profile_avatar_widget.dart';
 import 'lab_reports_screen.dart';
 import 'prescriptions_screen.dart';
 import 'vital_signs_screen.dart';
@@ -62,14 +63,10 @@ class MyHealthScreen extends StatelessWidget {
                       },
                       child: Row(
                         children: [
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: AppColors.brandCyan.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.person, color: AppColors.primaryNavy, size: 30),
+                          ProfileAvatarWidget(
+                            avatarId: user.avatarId,
+                            size: 52,
+                            iconSize: 26,
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -80,7 +77,13 @@ class MyHealthScreen extends StatelessWidget {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        isBn ? user.nameBn : user.nameEn,
+                                        user.isLoggedIn
+                                            ? (user.nameBn.isNotEmpty
+                                                ? user.nameBn
+                                                : (user.nameEn.isNotEmpty
+                                                    ? user.nameEn
+                                                    : (isBn ? 'নামবিহীন প্রোফাইল' : 'Unnamed Profile')))
+                                            : (isBn ? 'লগইন / প্রোফাইল তৈরি' : 'Sign In / Profile'),
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
@@ -90,26 +93,29 @@ class MyHealthScreen extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.sosRed.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        user.bloodGroup,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.sosRed,
+                                    if (user.bloodGroup.isNotEmpty && user.bloodGroup != 'N/A')
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.sosRed.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          user.bloodGroup,
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.sosRed,
+                                          ),
                                         ),
                                       ),
-                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'PID: ${user.id} • ${user.age > 0 ? (isBn ? '${user.age} বছর' : '${user.age} yrs') : (isBn ? '২৮ বছর' : '28 yrs')}',
+                                  user.isLoggedIn
+                                      ? 'PID: ${user.id} • ${user.age > 0 ? (isBn ? '${user.age} বছর' : '${user.age} yrs') : (isBn ? 'বয়স অনির্ধারিত' : 'Age not set')}'
+                                      : (isBn ? 'স্বাস্থ্য তথ্য সুরক্ষিত করতে স্পর্শ করুন' : 'Tap to manage personal health records'),
                                   style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
                                 ),
                               ],
