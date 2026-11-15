@@ -151,13 +151,52 @@ class _VideoConsultationRoomScreenState extends State<VideoConsultationRoomScree
     );
   }
 
+  void _confirmEndCall(bool isBn) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(isBn ? 'কল শেষ করবেন?' : 'End Consultation?'),
+        content: Text(
+          isBn
+              ? 'আপনি কি নিশ্চিত যে ভিডিও কনসালটেশনটি শেষ করতে চান?'
+              : 'Are you sure you want to end this teleconsultation?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(isBn ? 'না' : 'Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.sosRed,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _endCall();
+            },
+            child: Text(isBn ? 'হ্যাঁ, কল কাটুন' : 'End Call'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isBn = AppLocaleController.instance.isBangla;
     final duration = _formatCallDuration(_callSeconds);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop) {
+          _confirmEndCall(isBn);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
       body: SafeArea(
         child: Stack(
           children: [
@@ -409,7 +448,8 @@ class _VideoConsultationRoomScreenState extends State<VideoConsultationRoomScree
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildControlButton({

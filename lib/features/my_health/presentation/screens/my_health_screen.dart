@@ -18,6 +18,7 @@ class MyHealthScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           isBn ? 'আমার স্বাস্থ্য (My Health)' : 'My Health',
           style: const TextStyle(

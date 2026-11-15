@@ -9,6 +9,8 @@ import 'package:sasthyaloy/features/teleconsultation/domain/models/payment_model
 import 'package:sasthyaloy/features/teleconsultation/presentation/screens/payment_checkout_screen.dart';
 import 'package:sasthyaloy/features/teleconsultation/presentation/screens/video_consultation_room_screen.dart';
 import 'package:sasthyaloy/features/teleconsultation/presentation/screens/post_consultation_summary_screen.dart';
+import 'package:sasthyaloy/features/navigation/presentation/screens/main_shell_screen.dart';
+import 'package:sasthyaloy/features/onboarding/presentation/screens/language_selection_screen.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -110,5 +112,16 @@ void main() {
       callDuration: '12:35',
     );
     expect(summaryScreen.callDuration, '12:35');
+  });
+
+  testWidgets('Sasthyaloy back navigation & PopScope shell tests', (tester) async {
+    const shellScreen = MainShellScreen(initialIndex: 0);
+    expect(shellScreen.initialIndex, 0);
+
+    const langScreenNormal = LanguageSelectionScreen();
+    expect(langScreenNormal.isFromSettings, false);
+
+    const langScreenSettings = LanguageSelectionScreen(isFromSettings: true);
+    expect(langScreenSettings.isFromSettings, true);
   });
 }

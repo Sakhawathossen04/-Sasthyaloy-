@@ -136,6 +136,7 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> with SingleTickerProvider
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
         title: Row(

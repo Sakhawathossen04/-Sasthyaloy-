@@ -4,7 +4,8 @@ import '../../../../core/localization/app_locale_controller.dart';
 import 'location_permission_screen.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
-  const LanguageSelectionScreen({super.key});
+  final bool isFromSettings;
+  const LanguageSelectionScreen({super.key, this.isFromSettings = false});
 
   @override
   State<LanguageSelectionScreen> createState() => _LanguageSelectionScreenState();
@@ -27,6 +28,10 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   }
 
   void _proceed() {
+    if (widget.isFromSettings) {
+      Navigator.of(context).pop();
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const LocationPermissionScreen()),
     );
@@ -41,12 +46,20 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: widget.isFromSettings,
+        leading: widget.isFromSettings
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.primaryNavy),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         actions: [
           TextButton(
             onPressed: _proceed,
             child: Text(
-              isBn ? 'এগিয়ে যান' : 'Skip',
+              widget.isFromSettings
+                  ? (isBn ? 'সংরক্ষণ' : 'Save')
+                  : (isBn ? 'এগিয়ে যান' : 'Skip'),
               style: const TextStyle(
                 color: AppColors.brandCyan,
                 fontWeight: FontWeight.bold,
@@ -145,7 +158,9 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        isBn ? 'নিশ্চিত করুন ও এগিয়ে যান' : 'Confirm & Proceed',
+                        widget.isFromSettings
+                            ? (isBn ? 'সংরক্ষণ করুন' : 'Save Preference')
+                            : (isBn ? 'নিশ্চিত করুন ও এগিয়ে যান' : 'Confirm & Proceed'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

@@ -18,6 +18,7 @@ class AppointmentsScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: Text(
             isBn ? 'অ্যাপয়েন্টমেন্টসমূহ' : 'Appointments',
             style: const TextStyle(

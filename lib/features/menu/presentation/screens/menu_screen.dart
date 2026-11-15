@@ -26,6 +26,7 @@ class _MenuScreenState extends State<MenuScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           isBn ? 'প্রোফাইল ও সেটিংস' : 'Profile & Settings',
           style: const TextStyle(
@@ -91,7 +92,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       trailingText: isBn ? 'বাংলা' : 'English',
                       onTap: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
+                          MaterialPageRoute(builder: (_) => const LanguageSelectionScreen(isFromSettings: true)),
                         );
                       },
                     ),

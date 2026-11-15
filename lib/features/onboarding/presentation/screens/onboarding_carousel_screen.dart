@@ -15,8 +15,9 @@ class _OnboardingCarouselScreenState extends State<OnboardingCarouselScreen> {
   int _currentPage = 0;
 
   void _finishOnboarding() {
-    Navigator.of(context).pushReplacement(
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const MainShellScreen()),
+      (route) => false,
     );
   }
 
