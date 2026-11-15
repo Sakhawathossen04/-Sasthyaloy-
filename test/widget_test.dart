@@ -16,7 +16,10 @@ import 'package:sasthyaloy/features/navigation/presentation/screens/main_shell_s
 import 'package:sasthyaloy/features/onboarding/presentation/screens/language_selection_screen.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
   });
 
