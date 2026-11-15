@@ -59,32 +59,37 @@ jobs:
 
       - name: "৮. ইউনিট টেস্ট (Smoke Test)"
         run: |
-          flutter test --reporter expanded 2>&1 | tee test_log.txt || true
-          echo "### Unit Test Summary" >> $GITHUB_STEP_SUMMARY
+          flutter test --reporter expanded 2>&1 | tee test_log.txt
+          TEST_EXIT=${PIPESTATUS[0]}
+          echo "### Unit Test Summary (Exit: $TEST_EXIT)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           tail -n 100 test_log.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ $TEST_EXIT -ne 0 ]; then
+            exit $TEST_EXIT
+          fi
 
       - name: "৯. অ্যান্ড্রয়েড রিলিজ APK বিল্ড (Build Android Release APK)"
         run: |
           echo "Building Production Release APK..."
           flutter build apk --release --no-tree-shake-icons 2>&1 | tee build_log.txt
-
-      - name: "বিল্ড এরর লগ সামারি (Build Failure Summary)"
-        if: failure()
-        run: |
-          echo "### Build Error Log" >> $GITHUB_STEP_SUMMARY
+          BUILD_EXIT=${PIPESTATUS[0]}
+          echo "### Release APK Build Summary (Exit: $BUILD_EXIT)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          if [ -f build_log.txt ]; then
-            tail -n 120 build_log.txt >> $GITHUB_STEP_SUMMARY
+          tail -n 120 build_log.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ $BUILD_EXIT -ne 0 ]; then
+            exit $BUILD_EXIT
           fi
-          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: "১০. বিল্ড করা APK আর্টফ্যাক্টসে আপলোড (Upload APK Artifacts)"
         uses: actions/upload-artifact@v4
         with:
           name: Sasthyaloy-Release-APK
-          path: build/app/outputs/flutter-apk/*.apk
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/**/*.apk
+          retention-days: 14
           retention-days: 14
 
       - name: "১১. গিটহাব রিলিজ পাবলিশ (Create GitHub Release if Tagged)"

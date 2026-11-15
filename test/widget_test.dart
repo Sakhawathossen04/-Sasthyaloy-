@@ -16,6 +16,7 @@ import 'package:sasthyaloy/features/onboarding/presentation/screens/language_sel
 import 'package:sasthyaloy/features/menu/presentation/screens/menu_screen.dart';
 import 'package:sasthyaloy/features/auth/presentation/screens/edit_profile_screen.dart';
 import 'package:sasthyaloy/features/auth/presentation/widgets/profile_avatar_widget.dart';
+import 'package:sasthyaloy/app/app.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -166,15 +167,18 @@ void main() {
     const editProfileScreen = EditProfileScreen();
     expect(editProfileScreen.key, null);
 
-    const avatarWidget = ProfileAvatarWidget(avatarId: 'avatar_1', radius: 30);
+    const avatarWidget = ProfileAvatarWidget(avatarId: 'avatar_1', size: 60, iconSize: 30);
     expect(avatarWidget.avatarId, 'avatar_1');
-    expect(avatarWidget.radius, 30);
+    expect(avatarWidget.size, 60);
 
-    expect(ProfileAvatarInfo.allAvatars.length, 8);
-    for (final avatar in ProfileAvatarInfo.allAvatars) {
+    expect(ProfileAvatarInfo.all.length, 8);
+    for (final avatar in ProfileAvatarInfo.all) {
       expect(avatar.id.isNotEmpty, true);
       expect(avatar.titleBn.isNotEmpty, true);
       expect(avatar.titleEn.isNotEmpty, true);
     }
+
+    const app = SasthyaloyApp();
+    expect(app.key, null);
   });
 }
