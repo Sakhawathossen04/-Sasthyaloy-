@@ -1,6 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/domain/models/user_profile_model.dart';
 
 class StorageService {
@@ -11,37 +11,73 @@ class StorageService {
   static const String _keyIsLoggedIn = 'sasthyaloy_is_logged_in';
   static const String _keyUserProfile = 'sasthyaloy_user_profile_json';
 
-  static SharedPreferences? _prefs;
   static final Map<String, dynamic> _memoryCache = {};
+  static File? _storageFile;
 
   static Future<void> init() async {
     try {
-      _prefs = await SharedPreferences.getInstance();
+      _storageFile = _resolveStorageFile();
+      if (_storageFile != null && _storageFile!.existsSync()) {
+        final content = _storageFile!.readAsStringSync();
+        if (content.isNotEmpty) {
+          final Map<String, dynamic> data = jsonDecode(content);
+          _memoryCache.addAll(data);
+        }
+      }
     } catch (e) {
-      debugPrint('StorageService SharedPreferences fallback to memory cache: $e');
+      debugPrint('StorageService init error: $e');
+    }
+  }
+
+  static File _resolveStorageFile() {
+    final candidatePaths = [
+      '/data/user/0/com.sasthyaloy/files',
+      '/data/data/com.sasthyaloy/files',
+      '/data/user/0/com.sasthyaloy.sasthyaloy/files',
+      '/data/data/com.sasthyaloy.sasthyaloy/files',
+    ];
+
+    for (final path in candidatePaths) {
+      try {
+        final dir = Directory(path);
+        if (!dir.existsSync()) {
+          dir.createSync(recursive: true);
+        }
+        final testFile = File('${dir.path}/.test_storage');
+        testFile.writeAsStringSync('1');
+        testFile.deleteSync();
+        return File('${dir.path}/sasthyaloy_storage.json');
+      } catch (_) {}
+    }
+
+    // Fallback for tests, desktop, temp environments
+    try {
+      final tempDir = Directory.systemTemp;
+      return File('${tempDir.path}/sasthyaloy_storage.json');
+    } catch (_) {
+      return File('sasthyaloy_storage.json');
+    }
+  }
+
+  static void _persistToFile() {
+    try {
+      _storageFile ??= _resolveStorageFile();
+      _storageFile?.writeAsStringSync(jsonEncode(_memoryCache));
+    } catch (e) {
+      debugPrint('StorageService write error: $e');
     }
   }
 
   static bool hasCompletedOnboarding() {
-    if (_prefs != null) {
-      return _prefs!.getBool(_keyOnboardingCompleted) ?? false;
-    }
     return _memoryCache[_keyOnboardingCompleted] as bool? ?? false;
   }
 
   static Future<void> setCompletedOnboarding(bool completed) async {
     _memoryCache[_keyOnboardingCompleted] = completed;
-    try {
-      await _prefs?.setBool(_keyOnboardingCompleted, completed);
-    } catch (e) {
-      debugPrint('Error saving onboarding state: $e');
-    }
+    _persistToFile();
   }
 
   static bool getIsLoggedIn() {
-    if (_prefs != null) {
-      return _prefs!.getBool(_keyIsLoggedIn) ?? false;
-    }
     return _memoryCache[_keyIsLoggedIn] as bool? ?? false;
   }
 
@@ -49,29 +85,18 @@ class StorageService {
     _memoryCache[_keyIsLoggedIn] = user.isLoggedIn;
     final jsonStr = jsonEncode(user.toJson());
     _memoryCache[_keyUserProfile] = jsonStr;
-
-    try {
-      await _prefs?.setBool(_keyIsLoggedIn, user.isLoggedIn);
-      await _prefs?.setString(_keyUserProfile, jsonStr);
-    } catch (e) {
-      debugPrint('Error saving user profile to storage: $e');
-    }
+    _persistToFile();
   }
 
   static UserProfileModel? loadUserProfile() {
     try {
-      String? jsonStr;
-      if (_prefs != null) {
-        jsonStr = _prefs!.getString(_keyUserProfile);
-      }
-      jsonStr ??= _memoryCache[_keyUserProfile] as String?;
-
+      final jsonStr = _memoryCache[_keyUserProfile] as String?;
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final Map<String, dynamic> data = jsonDecode(jsonStr);
         return UserProfileModel.fromJson(data);
       }
     } catch (e) {
-      debugPrint('Error loading user profile from storage: $e');
+      debugPrint('Error loading user profile: $e');
     }
     return null;
   }
@@ -79,11 +104,6 @@ class StorageService {
   static Future<void> clearAuthSession() async {
     _memoryCache[_keyIsLoggedIn] = false;
     _memoryCache.remove(_keyUserProfile);
-    try {
-      await _prefs?.setBool(_keyIsLoggedIn, false);
-      await _prefs?.remove(_keyUserProfile);
-    } catch (e) {
-      debugPrint('Error clearing auth session: $e');
-    }
+    _persistToFile();
   }
 }
