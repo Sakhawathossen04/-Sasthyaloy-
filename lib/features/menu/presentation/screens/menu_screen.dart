@@ -372,7 +372,7 @@ class _MenuScreenState extends State<MenuScreen> {
                     color: AppColors.brandCyan.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.group_add_outlined, color: AppColors.brandCyan, size: 22),
+                  child: const Icon(Icons.group_add, color: AppColors.brandCyan, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -805,7 +805,7 @@ class _MenuScreenState extends State<MenuScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.lock_person_outlined, color: AppColors.primaryNavy, size: 24),
+              const Icon(Icons.lock_outline, color: AppColors.primaryNavy, size: 24),
               const SizedBox(width: 10),
               Text(
                 isBn ? 'লগইন করে সম্পূর্ণ সেবা গ্রহণ করুন' : 'Sign in to access your records',

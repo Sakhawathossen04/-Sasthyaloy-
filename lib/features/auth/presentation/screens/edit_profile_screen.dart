@@ -292,7 +292,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Center(
               child: TextButton.icon(
                 onPressed: () => _showAvatarPickerModal(context, isBn),
-                icon: const Icon(Icons.palette_outlined, size: 16, color: AppColors.brandCyan),
+                icon: const Icon(Icons.palette, size: 16, color: AppColors.brandCyan),
                 label: Text(
                   isBn ? 'ছবি বা অবতার পরিবর্তন করুন' : 'Change Avatar',
                   style: const TextStyle(
@@ -396,7 +396,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               controller: _emergencyController,
               label: isBn ? 'জরুরি যোগাযোগের নম্বর' : 'Emergency Contact',
               hint: '+880 1819-876543',
-              icon: Icons.emergency_outlined,
+              icon: Icons.phone_in_talk_outlined,
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 14),
