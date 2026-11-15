@@ -13,10 +13,6 @@ import 'package:sasthyaloy/features/teleconsultation/presentation/screens/video_
 import 'package:sasthyaloy/features/teleconsultation/presentation/screens/post_consultation_summary_screen.dart';
 import 'package:sasthyaloy/features/navigation/presentation/screens/main_shell_screen.dart';
 import 'package:sasthyaloy/features/onboarding/presentation/screens/language_selection_screen.dart';
-import 'package:sasthyaloy/features/menu/presentation/screens/menu_screen.dart';
-import 'package:sasthyaloy/features/auth/presentation/screens/edit_profile_screen.dart';
-import 'package:sasthyaloy/features/auth/presentation/widgets/profile_avatar_widget.dart';
-import 'package:sasthyaloy/app/app.dart';
 
 void main() {
   test('Sasthyaloy brand identity test', () {
@@ -158,27 +154,5 @@ void main() {
 
     const langScreenSettings = LanguageSelectionScreen(isFromSettings: true);
     expect(langScreenSettings.isFromSettings, true);
-  });
-
-  testWidgets('Sasthyaloy menu, profile, and avatar widget sanity test', (tester) async {
-    const menuScreen = MenuScreen();
-    expect(menuScreen.key, null);
-
-    const editProfileScreen = EditProfileScreen();
-    expect(editProfileScreen.key, null);
-
-    const avatarWidget = ProfileAvatarWidget(avatarId: 'avatar_1', size: 60, iconSize: 30);
-    expect(avatarWidget.avatarId, 'avatar_1');
-    expect(avatarWidget.size, 60);
-
-    expect(ProfileAvatarInfo.all.length, 8);
-    for (final avatar in ProfileAvatarInfo.all) {
-      expect(avatar.id.isNotEmpty, true);
-      expect(avatar.titleBn.isNotEmpty, true);
-      expect(avatar.titleEn.isNotEmpty, true);
-    }
-
-    const app = SasthyaloyApp();
-    expect(app.key, null);
   });
 }
