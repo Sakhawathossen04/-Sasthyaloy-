@@ -424,9 +424,9 @@ class _VoiceAiScreenState extends State<VoiceAiScreen>
     try {
       final picked = await _imagePicker.pickImage(
         source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 75,
+        maxWidth: 720,
+        maxHeight: 720,
+        imageQuality: 65,
       );
       if (picked != null) {
         final bytes = await picked.readAsBytes();

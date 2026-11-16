@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../../features/voice_ai/domain/models/symptom_triage_model.dart';
 
 /// Service connecting Sasthyaloy AI to OpenRouter's free AI models
@@ -20,14 +21,21 @@ class OpenRouterService {
 
   static const String _apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
 
-  /// Preferred Free Models on OpenRouter
-  static const List<String> _freeModels = [
+  /// Preferred Free Multimodal Vision Models on OpenRouter
+  static const List<String> _visionModels = [
+    'nvidia/nemotron-3.5-super-vl:free',
     'openrouter/free',
-    'nvidia/nemotron-3.5-lightning:free',
     'inclusionai/ling-3.2-flash:free',
     'thinkingmachines/inkling-2-small:free',
-    'google/gemma-4-31b-it:free',
-    'google/gemma-4-26b-a4b-it:free',
+  ];
+
+  /// Preferred Free Text AI Models on OpenRouter
+  static const List<String> _textModels = [
+    'openrouter/free',
+    'nvidia/nemotron-3.5-lightning:free',
+    'baidu/ernie-5.5-flash-preview:free',
+    'inclusionai/ling-3.2-flash:free',
+    'thinkingmachines/inkling-2-small:free',
   ];
 
   /// Query OpenRouter AI model for clinical advice.
@@ -72,7 +80,8 @@ Your responsibilities:
 
     // Prepare multimodal user prompt if image is attached
     dynamic userContent;
-    if (imageBytes != null && imageBytes.isNotEmpty) {
+    final hasImage = imageBytes != null && imageBytes.isNotEmpty;
+    if (hasImage) {
       final base64Image = base64Encode(imageBytes);
       final textDesc = userQuery.trim().isNotEmpty
           ? userQuery
@@ -90,8 +99,10 @@ Your responsibilities:
       userContent = userQuery;
     }
 
+    final modelsToTry = hasImage ? _visionModels : _textModels;
+
     // 2. Iterate through free models in order of priority
-    for (final model in _freeModels) {
+    for (final model in modelsToTry) {
       try {
         final replyText = await _callOpenRouter(
           model: model,
@@ -123,22 +134,19 @@ Your responsibilities:
     );
   }
 
-  /// Execute HTTP POST to OpenRouter using pure Dart HttpClient
+  /// Execute HTTP POST to OpenRouter using http package
   Future<String?> _callOpenRouter({
     required String model,
     required String systemPrompt,
     required dynamic userPrompt,
   }) async {
-    HttpClient? client;
     try {
-      client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 15);
-
-      final request = await client.postUrl(Uri.parse(_apiUrl));
-      request.headers.set('Authorization', 'Bearer $_apiKey');
-      request.headers.set('Content-Type', 'application/json; charset=utf-8');
-      request.headers.set('HTTP-Referer', 'https://sasthyaloy.app');
-      request.headers.set('X-Title', 'Sasthyaloy Healthcare');
+      final headers = {
+        'Authorization': 'Bearer $_apiKey',
+        'Content-Type': 'application/json; charset=utf-8',
+        'HTTP-Referer': 'https://sasthyaloy.app',
+        'X-Title': 'Sasthyaloy Healthcare',
+      };
 
       final bodyMap = {
         'model': model,
@@ -146,16 +154,20 @@ Your responsibilities:
           {'role': 'system', 'content': systemPrompt},
           {'role': 'user', 'content': userPrompt},
         ],
-        'max_tokens': 1200,
+        'max_tokens': 1500,
         'temperature': 0.6,
       };
 
-      request.write(jsonEncode(bodyMap));
-      final response = await request.close().timeout(const Duration(seconds: 20));
+      final response = await http
+          .post(
+            Uri.parse(_apiUrl),
+            headers: headers,
+            body: utf8.encode(jsonEncode(bodyMap)),
+          )
+          .timeout(const Duration(seconds: 35));
 
       if (response.statusCode == 200) {
-        final responseBody = await response.transform(utf8.decoder).join();
-        final json = jsonDecode(responseBody) as Map<String, dynamic>;
+        final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         final choices = json['choices'] as List<dynamic>?;
         if (choices != null && choices.isNotEmpty) {
           final msg = choices[0]['message'] as Map<String, dynamic>?;
@@ -171,11 +183,12 @@ Your responsibilities:
           }
         }
       } else {
-        debugPrint('OpenRouter HTTP ${response.statusCode}');
+        debugPrint('OpenRouter HTTP ${response.statusCode}: ${response.body}');
       }
       return null;
-    } finally {
-      client?.close(force: true);
+    } catch (e) {
+      debugPrint('OpenRouter network exception for $model: $e');
+      return null;
     }
   }
 
@@ -241,7 +254,10 @@ Your responsibilities:
       suggestedDoc = isBangla
           ? 'হৃদরোগ / ইমার্জেন্সি বিশেষজ্ঞ'
           : 'Cardiologist / Emergency Specialist';
-    } else if (lower.contains('মাথা') || lower.contains('headache')) {
+    } else if (lower.contains('মাথা') ||
+        lower.contains('headache') ||
+        lower.contains('headake') ||
+        lower.contains('migraine')) {
       suggestedDoc = isBangla
           ? 'নিউরোলজিস্ট / মেডিসিন বিশেষজ্ঞ'
           : 'Neurologist / Medicine Specialist';
@@ -284,16 +300,17 @@ Your responsibilities:
     // Remove <think>...</think>
     cleaned = cleaned.replaceAll(RegExp(r'<think>[\s\S]*?</think>'), '').trim();
     // Remove preamble thought sentences if any
-    if (cleaned.contains("Here's a thinking process:")) {
+    if (cleaned.contains("Here's a thinking process:") || cleaned.startsWith("Thinking Process:")) {
       final parts = cleaned.split(RegExp(r"\n\s*\n"));
       final nonThinking = parts.where((p) =>
           !p.startsWith("Here's a thinking") &&
-          !p.startsWith("1.") &&
-          !p.toLowerCase().contains("analyze user input"));
+          !p.startsWith("Thinking Process:") &&
+          !p.toLowerCase().contains("analyze user input") &&
+          !p.toLowerCase().contains("analyze the request"));
       if (nonThinking.isNotEmpty) {
         cleaned = nonThinking.join('\n\n').trim();
       }
     }
-    return cleaned;
+    return cleaned.isNotEmpty ? cleaned : text;
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 /// Speech-to-Text (STT) Recognition Service for Sasthyaloy Healthcare Assistant.
@@ -18,7 +19,7 @@ class SpeechService {
 
   /// Initialize speech engine & verify permissions
   Future<bool> initialize() async {
-    if (_isInitialized) return true;
+    if (_isInitialized && _speech != null) return true;
 
     if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
       _isInitialized = true;
@@ -26,6 +27,17 @@ class SpeechService {
     }
 
     try {
+      // 1. Explicitly verify & request runtime microphone permission
+      final micStatus = await Permission.microphone.status;
+      if (!micStatus.isGranted) {
+        final reqResult = await Permission.microphone.request();
+        if (!reqResult.isGranted) {
+          debugPrint('SpeechService: Microphone permission denied by user.');
+          return false;
+        }
+      }
+
+      // 2. Initialize native speech recognizer
       _speech = SpeechToText();
       final available = await _speech!.initialize(
         onError: (errorNotification) {
@@ -66,8 +78,30 @@ class SpeechService {
     }
 
     try {
-      // Prioritize Bangladesh Bengali or standard English
-      final localeId = isBangla ? 'bn_BD' : 'en_US';
+      // Prioritize Bangladesh Bengali or standard English based on device locales
+      String? targetLocaleId;
+      try {
+        final locales = await _speech?.locales();
+        if (locales != null && locales.isNotEmpty) {
+          if (isBangla) {
+            final found = locales.firstWhere(
+              (l) => l.localeId.toLowerCase().startsWith('bn'),
+              orElse: () => locales.first,
+            );
+            targetLocaleId = found.localeId;
+          } else {
+            final found = locales.firstWhere(
+              (l) => l.localeId.toLowerCase().startsWith('en'),
+              orElse: () => locales.first,
+            );
+            targetLocaleId = found.localeId;
+          }
+        }
+      } catch (e) {
+        debugPrint('SpeechService locales lookup error: $e');
+      }
+
+      targetLocaleId ??= (isBangla ? 'bn_BD' : 'en_US');
 
       await _speech?.listen(
         onResult: (result) {
@@ -77,19 +111,40 @@ class SpeechService {
             isListeningNotifier.value = false;
           }
         },
-        localeId: localeId,
+        localeId: targetLocaleId,
         listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 3),
-        cancelOnError: true,
+        pauseFor: const Duration(seconds: 4),
+        cancelOnError: false,
         partialResults: true,
+        listenMode: ListenMode.confirmation,
       );
 
       isListeningNotifier.value = true;
       return true;
     } catch (e) {
       debugPrint('SpeechService listen exception: $e');
-      isListeningNotifier.value = false;
-      return false;
+      // Retry once with device default locale without forcing bn_BD
+      try {
+        await _speech?.listen(
+          onResult: (result) {
+            recognizedWordsNotifier.value = result.recognizedWords;
+            onResult(result.recognizedWords, result.finalResult);
+            if (result.finalResult) {
+              isListeningNotifier.value = false;
+            }
+          },
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 4),
+          cancelOnError: false,
+          partialResults: true,
+        );
+        isListeningNotifier.value = true;
+        return true;
+      } catch (retryError) {
+        debugPrint('SpeechService retry failed: $retryError');
+        isListeningNotifier.value = false;
+        return false;
+      }
     }
   }
 

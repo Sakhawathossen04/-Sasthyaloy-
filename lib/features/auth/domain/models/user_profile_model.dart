@@ -55,6 +55,7 @@ class UserProfileModel {
   final List<FamilyMember> familyMembers;
   final String activeMemberId;
   final String avatarId;
+  final String? customImagePath;
 
   const UserProfileModel({
     required this.id,
@@ -73,6 +74,7 @@ class UserProfileModel {
     required this.familyMembers,
     required this.activeMemberId,
     this.avatarId = 'avatar_1',
+    this.customImagePath,
   });
 
   UserProfileModel copyWith({
@@ -92,6 +94,7 @@ class UserProfileModel {
     List<FamilyMember>? familyMembers,
     String? activeMemberId,
     String? avatarId,
+    String? customImagePath,
   }) {
     return UserProfileModel(
       id: id ?? this.id,
@@ -110,6 +113,7 @@ class UserProfileModel {
       familyMembers: familyMembers ?? this.familyMembers,
       activeMemberId: activeMemberId ?? this.activeMemberId,
       avatarId: avatarId ?? this.avatarId,
+      customImagePath: customImagePath ?? this.customImagePath,
     );
   }
 
@@ -130,6 +134,7 @@ class UserProfileModel {
         'familyMembers': familyMembers.map((m) => m.toJson()).toList(),
         'activeMemberId': activeMemberId,
         'avatarId': avatarId,
+        'customImagePath': customImagePath,
       };
 
   factory UserProfileModel.fromJson(Map<String, dynamic> json) => UserProfileModel(
@@ -152,6 +157,7 @@ class UserProfileModel {
             [],
         activeMemberId: json['activeMemberId'] as String? ?? 'self',
         avatarId: json['avatarId'] as String? ?? 'avatar_1',
+        customImagePath: json['customImagePath'] as String?,
       );
 
   /// Initially blank / logged-out user (Guest)

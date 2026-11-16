@@ -232,6 +232,9 @@ class ClinicalTriageEngine {
         lower.contains('মাথা ঘোরে') ||
         lower.contains('মাথা ঘোরানো') ||
         lower.contains('headache') ||
+        lower.contains('headake') ||
+        lower.contains('headeche') ||
+        lower.contains('head ache') ||
         lower.contains('migraine') ||
         lower.contains('head pain')) {
       return AiChatMessage(

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 class ProfileAvatarInfo {
@@ -94,18 +95,49 @@ class ProfileAvatarInfo {
 
 class ProfileAvatarWidget extends StatelessWidget {
   final String avatarId;
+  final String? customImagePath;
   final double size;
   final double iconSize;
 
   const ProfileAvatarWidget({
     super.key,
     required this.avatarId,
+    this.customImagePath,
     this.size = 88,
     this.iconSize = 48,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (customImagePath != null && customImagePath!.isNotEmpty) {
+      final file = File(customImagePath!);
+      if (file.existsSync()) {
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: size > 60 ? 3 : 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: size * 0.15,
+                offset: Offset(0, size * 0.05),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Image.file(
+              file,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      }
+    }
+
     final info = ProfileAvatarInfo.getById(avatarId);
 
     return Container(

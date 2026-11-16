@@ -176,6 +176,9 @@ void main() {
     expect(avatarWidget.avatarId, 'avatar_1');
     expect(avatarWidget.size, 60);
 
+    const customAvatar = ProfileAvatarWidget(avatarId: 'avatar_1', customImagePath: 'path/to/img.jpg', size: 60, iconSize: 30);
+    expect(customAvatar.customImagePath, 'path/to/img.jpg');
+
     expect(ProfileAvatarInfo.all.length, 8);
     for (final avatar in ProfileAvatarInfo.all) {
       expect(avatar.id.isNotEmpty, true);
@@ -203,9 +206,12 @@ void main() {
     final banglishHead = service.correctSymptomText('matha betha', true);
     expect(banglishHead.contains('মাথাব্যথা'), true);
 
-    // 2. English symptom normalization
+    // 2. English symptom normalization & typo correction
     final englishChest = service.correctSymptomText('chest pain', false);
     expect(englishChest.toLowerCase().contains('chest pain'), true);
+
+    final englishHeadake = service.correctSymptomText('i have headake', true);
+    expect(englishHeadake.toLowerCase().contains('headache'), true);
 
     // 3. Filler word removal
     final cleaned = service.correctSymptomText('um uh kashi', true);
@@ -274,6 +280,10 @@ void main() {
     expect(headacheResult.recommendedSpecialist?.contains('নিউরোলজিস্ট') ?? false, true);
     expect(headacheResult.text.contains('মাথাব্যথা'), true);
     expect(headacheResult.text.contains('১০১°F'), false);
+
+    final headakeEngResult = ClinicalTriageEngine.analyzeSymptoms('i have headake', false);
+    expect(headakeEngResult.isEmergency, false);
+    expect(headakeEngResult.recommendedSpecialist?.contains('Neurologist') ?? false, true);
 
     // 2. Greeting should return polite welcome
     final greetingResult = ClinicalTriageEngine.analyzeSymptoms('hi', true);

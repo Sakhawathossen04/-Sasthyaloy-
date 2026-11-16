@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/app_locale_controller.dart';
 import '../../domain/controllers/auth_controller.dart';
@@ -24,6 +25,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late String _selectedGenderBn;
   late String _selectedGenderEn;
   late String _selectedAvatarId;
+  String? _customImagePath;
 
   final List<String> _bloodGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
@@ -43,6 +45,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _selectedGenderBn = user.genderBn.isNotEmpty ? user.genderBn : 'পুরুষ';
     _selectedGenderEn = user.genderEn.isNotEmpty ? user.genderEn : 'Male';
     _selectedAvatarId = user.avatarId.isNotEmpty ? user.avatarId : 'avatar_1';
+    _customImagePath = user.customImagePath;
   }
 
   @override
@@ -71,98 +74,242 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      isBn
-                          ? 'প্রোফাইল ছবি বা অবতার বাছুন'
-                          : 'Select Profile Photo / Avatar',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryNavy,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isBn
+                            ? 'প্রোফাইল ছবি বা অবতার বাছুন'
+                            : 'Select Profile Photo / Avatar',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryNavy,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    isBn
+                        ? 'আপনার পছন্দমতো গ্যালারি থেকে ছবি আপলোড করুন অথবা অবতার বেছে নিন:'
+                        : 'Upload a custom photo from gallery or choose an avatar:',
+                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Option 1: Gallery Upload Button
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandCyan.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.brandCyan.withOpacity(0.3)),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.brandCyan.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.photo_library_rounded, color: AppColors.brandCyan),
+                      ),
+                      title: Text(
+                        isBn ? 'গ্যালারি থেকে ছবি নির্বাচন (Upload from Gallery)' : 'Upload from Gallery',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryNavy,
+                        ),
+                      ),
+                      subtitle: Text(
+                        isBn ? 'ফোনের গ্যালারি থেকে নিজস্ব ছবি যুক্ত করুন' : 'Choose a picture from your gallery',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, color: AppColors.brandCyan),
+                      onTap: () async {
+                        Navigator.of(ctx).pop();
+                        try {
+                          final picker = ImagePicker();
+                          final picked = await picker.pickImage(
+                            source: ImageSource.gallery,
+                            maxWidth: 800,
+                            maxHeight: 800,
+                            imageQuality: 80,
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _customImagePath = picked.path;
+                            });
+                          }
+                        } catch (e) {
+                          debugPrint('Error picking from gallery: $e');
+                        }
+                      },
+                    ),
+                  ),
+
+                  // Option 2: Camera Photo
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.emeraldGreen.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.emeraldGreen.withOpacity(0.3)),
+                    ),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.emeraldGreen.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt_rounded, color: AppColors.emeraldGreen),
+                      ),
+                      title: Text(
+                        isBn ? 'ক্যামেরা দিয়ে ছবি তুলুন (Take Photo)' : 'Take Photo with Camera',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryNavy,
+                        ),
+                      ),
+                      subtitle: Text(
+                        isBn ? 'নতুন সেলফি বা প্রোফাইল ছবি তুলুন' : 'Capture a new selfie or profile photo',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, color: AppColors.emeraldGreen),
+                      onTap: () async {
+                        Navigator.of(ctx).pop();
+                        try {
+                          final picker = ImagePicker();
+                          final picked = await picker.pickImage(
+                            source: ImageSource.camera,
+                            maxWidth: 800,
+                            maxHeight: 800,
+                            imageQuality: 80,
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _customImagePath = picked.path;
+                            });
+                          }
+                        } catch (e) {
+                          debugPrint('Error capturing from camera: $e');
+                        }
+                      },
+                    ),
+                  ),
+
+                  if (_customImagePath != null && _customImagePath!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.sosRed,
+                          side: const BorderSide(color: AppColors.sosRed),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          minimumSize: const Size(double.infinity, 44),
+                        ),
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        label: Text(isBn ? 'কাস্টম ছবি বাতিল করে অবতার ব্যবহার করুন' : 'Remove Custom Photo & Use Avatar'),
+                        onPressed: () {
+                          setState(() {
+                            _customImagePath = null;
+                          });
+                          Navigator.of(ctx).pop();
+                        },
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                    ),
-                  ],
-                ),
-                Text(
-                  isBn
-                      ? 'আপনার স্বাস্থ্য প্রোফাইলের জন্য একটি অবতার নির্বাচন করুন:'
-                      : 'Choose a healthcare avatar for your medical profile:',
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 20),
-                // Avatars Grid
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: ProfileAvatarInfo.all.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemBuilder: (context, index) {
-                    final avatar = ProfileAvatarInfo.all[index];
-                    final isSelected = _selectedAvatarId == avatar.id;
 
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedAvatarId = avatar.id;
-                        });
-                        Navigator.of(ctx).pop();
-                      },
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.brandCyan.withOpacity(0.12)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? AppColors.brandCyan : AppColors.borderLight,
-                            width: isSelected ? 2.5 : 1.0,
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          isBn ? 'অথবা অবতার বেছে নিন' : 'Or choose an avatar',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                        ),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Avatars Grid
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: ProfileAvatarInfo.all.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 14,
+                      childAspectRatio: 0.85,
+                    ),
+                    itemBuilder: (context, index) {
+                      final avatar = ProfileAvatarInfo.all[index];
+                      final isSelected = _customImagePath == null && _selectedAvatarId == avatar.id;
+
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedAvatarId = avatar.id;
+                            _customImagePath = null;
+                          });
+                          Navigator.of(ctx).pop();
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.brandCyan.withOpacity(0.12)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected ? AppColors.brandCyan : AppColors.borderLight,
+                              width: isSelected ? 2.5 : 1.0,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ProfileAvatarWidget(
+                                avatarId: avatar.id,
+                                size: 46,
+                                iconSize: 24,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                isBn ? avatar.titleBn.split(' ').first : avatar.titleEn.split(' ').first,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  color: isSelected ? AppColors.primaryNavy : AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ProfileAvatarWidget(
-                              avatarId: avatar.id,
-                              size: 46,
-                              iconSize: 24,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              isBn ? avatar.titleBn.split(' ').first : avatar.titleEn.split(' ').first,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                color: isSelected ? AppColors.primaryNavy : AppColors.textPrimary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-              ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
           ),
         );
@@ -204,6 +351,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       addressBn: _addressBnController.text.trim(),
       addressEn: _addressEnController.text.trim(),
       avatarId: _selectedAvatarId,
+      customImagePath: _customImagePath,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -264,6 +412,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   children: [
                     ProfileAvatarWidget(
                       avatarId: _selectedAvatarId,
+                      customImagePath: _customImagePath,
                       size: 92,
                       iconSize: 50,
                     ),

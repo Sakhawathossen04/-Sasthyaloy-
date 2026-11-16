@@ -229,6 +229,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 borderRadius: BorderRadius.circular(35),
                 child: ProfileAvatarWidget(
                   avatarId: user.avatarId,
+                  customImagePath: user.customImagePath,
                   size: 64,
                   iconSize: 32,
                 ),

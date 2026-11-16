@@ -56,19 +56,31 @@ class SymptomCorrectionService {
     'chest pain': 'I am experiencing chest pain and pressure',
     'heart pain': 'I feel tightness and pain in my chest',
     'headache': 'I have a severe headache and dizziness',
+    'headake': 'I have a severe headache and discomfort',
+    'headeche': 'I have a severe headache and discomfort',
+    'head ache': 'I have a severe headache and discomfort',
     'stomach pain': 'I have acute stomach pain and burning sensation',
     'stomach ache': 'I am suffering from severe stomach ache and cramps',
+    'stomac ache': 'I am suffering from severe stomach ache and cramps',
     'acidity': 'I have acid reflux and heartburn after meals',
     'gas': 'I am having stomach gas and bloating',
     'fever': 'I have a high fever and body chills',
+    'fevar': 'I have a high fever and body chills',
     'cold cough': 'I have a persistent cough and sore throat',
     'cough': 'I have dry cough and throat irritation',
     'shortness of breath': 'I am experiencing shortness of breath and difficulty breathing',
     'breathless': 'I feel breathless and tight in the chest',
     'vomiting': 'I am feeling nauseous and vomiting repeatedly',
+    'vomit': 'I am feeling nauseous and vomiting repeatedly',
     'loose motion': 'I have diarrhea and dehydration symptoms',
+    'diahrea': 'I have diarrhea and dehydration symptoms',
+    'diarrhea': 'I have diarrhea and dehydration symptoms',
+    'diarhea': 'I have diarrhea and dehydration symptoms',
     'high pressure': 'My blood pressure feels elevated with dizziness',
     'skin rash': 'I have an allergic skin rash and itching',
+    'rash': 'I have an allergic skin rash and itching',
+    'itching': 'I have severe skin itching and irritation',
+    'eye pain': 'I have acute eye pain and irritation',
   };
 
   /// Clean, correct, and format raw voice transcription text.
@@ -103,10 +115,18 @@ class SymptomCorrectionService {
           }
         }
       }
+      // Also check English queries typed while in Bengali mode
+      for (final entry in _englishCorrections.entries) {
+        if (lower.contains(entry.key)) {
+          if (lower.length <= entry.key.length + 15) {
+            return entry.value;
+          }
+        }
+      }
     } else {
       for (final entry in _englishCorrections.entries) {
         if (lower.contains(entry.key)) {
-          if (text.length <= entry.key.length + 10) {
+          if (lower.length <= entry.key.length + 10) {
             return entry.value;
           }
         }

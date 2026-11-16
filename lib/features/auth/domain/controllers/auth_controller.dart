@@ -50,6 +50,7 @@ class AuthController {
     required String addressBn,
     required String addressEn,
     String? avatarId,
+    String? customImagePath,
   }) {
     final current = userNotifier.value;
     final updated = current.copyWith(
@@ -65,6 +66,7 @@ class AuthController {
       addressBn: addressBn,
       addressEn: addressEn,
       avatarId: avatarId ?? current.avatarId,
+      customImagePath: customImagePath ?? current.customImagePath,
       isLoggedIn: true,
       id: (current.id.isEmpty || current.id == 'GUEST-00')
           ? 'PT-${(DateTime.now().millisecondsSinceEpoch % 90000) + 10000}'
