@@ -44,3 +44,8 @@ migrate_working_dir/
 
 # Coverage
 coverage/
+
+# Environment files
+.env
+*.env
+

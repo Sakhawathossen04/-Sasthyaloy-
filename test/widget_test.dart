@@ -18,6 +18,7 @@ import 'package:sasthyaloy/features/auth/presentation/screens/edit_profile_scree
 import 'package:sasthyaloy/features/auth/presentation/widgets/profile_avatar_widget.dart';
 import 'package:sasthyaloy/core/services/emergency_call_service.dart';
 import 'package:sasthyaloy/core/services/symptom_correction_service.dart';
+import 'package:sasthyaloy/core/services/gemini_service.dart';
 import 'package:sasthyaloy/core/services/openrouter_service.dart';
 import 'package:sasthyaloy/core/services/tts_service.dart';
 import 'package:sasthyaloy/core/services/speech_service.dart';
@@ -229,6 +230,23 @@ void main() {
     expect(emergencyResp.isEmergency, true);
 
     final routineResp = await aiService.queryMedicalAssistant(
+      userQuery: 'হালকা ঠান্ডা ও কাশি',
+      isBangla: true,
+    );
+    expect(routineResp.isEmergency, false);
+    expect(routineResp.homeRemedies.isNotEmpty, true);
+  });
+
+  test('Sasthyaloy Google Gemini AI service test', () async {
+    final geminiService = GeminiService.instance;
+
+    final emergencyResp = await geminiService.queryMedicalAssistant(
+      userQuery: 'আমার বুকে তীব্র ব্যথা ও চাপ লাগছে',
+      isBangla: true,
+    );
+    expect(emergencyResp.isEmergency, true);
+
+    final routineResp = await geminiService.queryMedicalAssistant(
       userQuery: 'হালকা ঠান্ডা ও কাশি',
       isBangla: true,
     );

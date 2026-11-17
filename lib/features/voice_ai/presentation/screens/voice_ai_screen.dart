@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/localization/app_locale_controller.dart';
 import '../../../../core/services/emergency_call_service.dart';
+import '../../../../core/services/gemini_service.dart';
 import '../../../../core/services/openrouter_service.dart';
 import '../../../../core/services/speech_service.dart';
 import '../../../../core/services/storage_service.dart';
@@ -226,8 +227,8 @@ class _VoiceAiScreenState extends State<VoiceAiScreen>
     _persistCurrentSession();
 
     try {
-      // Query OpenRouter AI (with multimodal vision & local triage fallback)
-      final aiResponse = await OpenRouterService.instance.queryMedicalAssistant(
+      // Query Google Gemini AI (with multimodal vision, OpenRouter & local triage fallback)
+      final aiResponse = await GeminiService.instance.queryMedicalAssistant(
         userQuery: correctedQuery,
         isBangla: isBn,
         imageBytes: sendingImageBytes,

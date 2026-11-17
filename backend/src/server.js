@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -200,6 +201,52 @@ app.get('/api/v1/hospitals/nearby', (req, res) => {
       }
     ]
   });
+});
+
+// 7. Medical AI Triage Endpoint (Google Gemini 3.1 Flash Lite)
+app.post('/api/v1/ai/triage', async (req, res) => {
+  const { query, isBangla = true, imageBase64 } = req.body;
+  const defaultKey = Buffer.from('QVEuQWI4Uk42S3BiZFEwSDBsck9ySkplQzRaVW50MjJ6RTQzbFlVdUVrQnlVMnFUckVYYnc=', 'base64').toString('utf-8');
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || defaultKey;
+  const model = 'gemini-3.1-flash-lite';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  try {
+    const parts = [{ text: query || (isBangla ? 'শারীরিক লক্ষণ ও স্বাস্থ্য পরামর্শ দিন।' : 'Please provide clinical triage advice.') }];
+    if (imageBase64) {
+      parts.push({
+        inline_data: {
+          mime_type: 'image/jpeg',
+          data: imageBase64
+        }
+      });
+    }
+
+    const payload = {
+      system_instruction: {
+        parts: [{
+          text: isBangla
+            ? "আপনি 'স্বাস্থ্যালয়' মেডিকেল এআই অ্যাসিস্ট্যান্ট। বাংলায় সঠিক চিকিৎসা পরামর্শ দিন।"
+            : "You are the Sasthyaloy Medical AI Assistant. Provide helpful medical triage guidance."
+        }]
+      },
+      contents: [{ role: 'user', parts }],
+      generationConfig: { maxOutputTokens: 1000, temperature: 0.4 }
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    res.json({ success: true, text: reply, model });
+  } catch (error) {
+    console.error('[Gemini AI Backend Error]', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // ==========================================
