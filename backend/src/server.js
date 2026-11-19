@@ -203,50 +203,78 @@ app.get('/api/v1/hospitals/nearby', (req, res) => {
   });
 });
 
-// 7. Medical AI Triage Endpoint (Google Gemini 3.1 Flash Lite)
+// 7. Medical AI Triage Endpoint (Google Gemini Full Chat Model)
 app.post('/api/v1/ai/triage', async (req, res) => {
-  const { query, isBangla = true, imageBase64 } = req.body;
+  const { query, isBangla = true, imageBase64, history = [] } = req.body;
   const defaultKey = Buffer.from('QVEuQWI4Uk42S3BiZFEwSDBsck9ySkplQzRaVW50MjJ6RTQzbFlVdUVrQnlVMnFUckVYYnc=', 'base64').toString('utf-8');
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || defaultKey;
-  const model = 'gemini-3.1-flash-lite';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const candidateModels = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'];
 
-  try {
-    const parts = [{ text: query || (isBangla ? 'শারীরিক লক্ষণ ও স্বাস্থ্য পরামর্শ দিন।' : 'Please provide clinical triage advice.') }];
-    if (imageBase64) {
-      parts.push({
-        inline_data: {
-          mime_type: 'image/jpeg',
-          data: imageBase64
-        }
-      });
+  const contents = [];
+  if (Array.isArray(history) && history.length > 0) {
+    let lastRole = null;
+    for (const msg of history.slice(-8)) {
+      const role = msg.sender === 'user' ? 'user' : 'model';
+      const text = (msg.text || '').trim();
+      if (!text) continue;
+      if (role === lastRole && contents.length > 0) {
+        contents[contents.length - 1].parts.push({ text });
+      } else {
+        contents.push({ role, parts: [{ text }] });
+        lastRole = role;
+      }
     }
-
-    const payload = {
-      system_instruction: {
-        parts: [{
-          text: isBangla
-            ? "আপনি 'স্বাস্থ্যালয়' মেডিকেল এআই অ্যাসিস্ট্যান্ট। বাংলায় সঠিক চিকিৎসা পরামর্শ দিন।"
-            : "You are the Sasthyaloy Medical AI Assistant. Provide helpful medical triage guidance."
-        }]
-      },
-      contents: [{ role: 'user', parts }],
-      generationConfig: { maxOutputTokens: 1000, temperature: 0.4 }
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await response.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    res.json({ success: true, text: reply, model });
-  } catch (error) {
-    console.error('[Gemini AI Backend Error]', error);
-    res.status(500).json({ success: false, error: error.message });
   }
+
+  const currentParts = [{ text: query || (isBangla ? 'শারীরিক লক্ষণ ও স্বাস্থ্য পরামর্শ দিন।' : 'Please provide clinical triage advice.') }];
+  if (imageBase64) {
+    currentParts.push({
+      inline_data: {
+        mime_type: 'image/jpeg',
+        data: imageBase64
+      }
+    });
+  }
+
+  if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+    contents[contents.length - 1].parts = currentParts;
+  } else {
+    contents.push({ role: 'user', parts: currentParts });
+  }
+
+  const payload = {
+    system_instruction: {
+      parts: [{
+        text: isBangla
+          ? "আপনি 'স্বাস্থ্যালয়' মেডিকেল এআই অ্যাসিস্ট্যান্ট। বাংলায় যত্নশীল ও সঠিক চিকিৎসা পরামর্শ দিন।"
+          : "You are the Sasthyaloy Medical AI Assistant. Provide helpful, conversational medical triage guidance."
+      }]
+    },
+    contents,
+    generationConfig: { maxOutputTokens: 1000, temperature: 0.4 }
+  };
+
+  for (const model of candidateModels) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (reply && reply.trim()) {
+          return res.json({ success: true, text: reply.trim(), model });
+        }
+      }
+    } catch (err) {
+      console.warn(`[Gemini Model ${model} Failed]:`, err.message);
+    }
+  }
+
+  res.status(500).json({ success: false, error: 'All Gemini models temporarily busy' });
 });
 
 // ==========================================

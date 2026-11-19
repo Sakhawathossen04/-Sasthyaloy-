@@ -252,6 +252,28 @@ void main() {
     );
     expect(routineResp.isEmergency, false);
     expect(routineResp.homeRemedies.isNotEmpty, true);
+
+    // Multi-turn chat model history test
+    const chatHistory = [
+      AiChatMessage(
+        id: 'msg_hist_1',
+        sender: 'user',
+        text: 'আমার নাম শাফিন',
+        timestamp: '10:00 AM',
+      ),
+      AiChatMessage(
+        id: 'msg_hist_2',
+        sender: 'ai',
+        text: 'নমস্কার শাফিন। স্বাস্থ্যালয়ে স্বাগতম।',
+        timestamp: '10:00 AM',
+      ),
+    ];
+    final followUpResp = await geminiService.queryMedicalAssistant(
+      userQuery: 'আমার পেটে ব্যথা করছে',
+      isBangla: true,
+      chatHistory: chatHistory,
+    );
+    expect(followUpResp.text.isNotEmpty, true);
   });
 
   test('Sasthyaloy TTS service text cleansing & state test', () async {

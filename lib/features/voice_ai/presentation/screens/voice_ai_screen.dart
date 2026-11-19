@@ -219,6 +219,8 @@ class _VoiceAiScreenState extends State<VoiceAiScreen>
           : (isBn ? 'ছবিসহ স্বাস্থ্য পরামর্শ' : 'Visual Symptom Query');
     }
 
+    final historySnapshot = List<AiChatMessage>.from(_messages);
+
     setState(() {
       _messages.add(userMsg);
       _isAnalyzing = true;
@@ -227,12 +229,13 @@ class _VoiceAiScreenState extends State<VoiceAiScreen>
     _persistCurrentSession();
 
     try {
-      // Query Google Gemini AI (with multimodal vision, OpenRouter & local triage fallback)
+      // Query Google Gemini AI (as a full chat model with multi-turn memory & multimodal vision)
       final aiResponse = await GeminiService.instance.queryMedicalAssistant(
         userQuery: correctedQuery,
         isBangla: isBn,
         imageBytes: sendingImageBytes,
         imagePath: sendingImagePath,
+        chatHistory: historySnapshot,
       );
 
       if (!mounted) return;
