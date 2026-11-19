@@ -1,13 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../features/voice_ai/domain/models/symptom_triage_model.dart';
+import '../utils/platform_utils.dart';
 import 'openrouter_service.dart';
 
-/// Primary AI Service connecting Sasthyaloy to Google Gemini AI API
+/// Primary AI Service connecting Sasthyaloy to Google Gemini AI API (gemini-3.1-flash-lite)
 /// as a full multi-turn conversational chat model with multimodal vision support,
-/// conversational memory, automatic failover to OpenRouter, and offline clinical triage fallback.
+/// conversational memory, automatic model failover, and clinical emergency triage.
 class GeminiService {
   GeminiService._();
   static final GeminiService instance = GeminiService._();
@@ -26,12 +26,13 @@ class GeminiService {
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
   /// Preferred Gemini Models in order of speed and capability
+  /// gemini-3.1-flash-lite: ultra-fast free tier (~2.1s)
+  /// gemini-3-flash-preview: high-reliability fast preview (~2.6s)
+  /// gemini-3.5-flash-lite: latest generation fallback
   static const List<String> _geminiModels = [
-    'gemini-3-flash-preview',
     'gemini-3.1-flash-lite',
-    'gemini-3.1-flash-lite-preview',
+    'gemini-3-flash-preview',
     'gemini-3.5-flash-lite',
-    'gemini-flash-latest',
   ];
 
   /// Query Google Gemini AI model as a full chat model with multi-turn memory & vision.
@@ -47,7 +48,7 @@ class GeminiService {
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
     // 1. In unit tests or mock environment, immediately use clinical triage engine
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (PlatformUtils.isFlutterTest) {
       return ClinicalTriageEngine.analyzeSymptoms(
         userQuery,
         isBangla,
@@ -124,8 +125,8 @@ class GeminiService {
       final textPrompt = userQuery.trim().isNotEmpty
           ? userQuery
           : (isBangla
-              ? 'এই সংযুক্ত ছবিটি দেখে ক্লিনিক্যাল ট্রায়াজিং ও প্রাথমিক পর্যবেক্ষণ দিন।'
-              : 'Please evaluate this attached image and provide clinical observations.');
+              ? 'এই সংযুক্ত ছবিটি মনোযোগ দিয়ে দেখে বিস্তারিত পর্যবেক্ষণ ও স্বাস্থ্য পরামর্শ দিন।'
+              : 'Please evaluate this attached image in detail and provide clinical observations.');
       currentParts.add({'text': textPrompt});
 
       if (imageBytes != null && imageBytes.isNotEmpty) {
@@ -187,8 +188,8 @@ class GeminiService {
         },
         'contents': contents,
         'generationConfig': {
-          'temperature': 0.4,
-          'maxOutputTokens': 1200,
+          'temperature': 0.5,
+          'maxOutputTokens': 1500,
         }
       };
 
@@ -198,7 +199,7 @@ class GeminiService {
             headers: {'Content-Type': 'application/json; charset=utf-8'},
             body: utf8.encode(jsonEncode(payload)),
           )
-          .timeout(const Duration(seconds: 14));
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
@@ -216,7 +217,7 @@ class GeminiService {
           }
         }
       } else {
-        debugPrint('Gemini HTTP ${response.statusCode}: ${response.body}');
+        debugPrint('Gemini HTTP ${response.statusCode} for $model: ${response.body}');
       }
       return null;
     } catch (e) {
@@ -225,24 +226,24 @@ class GeminiService {
     }
   }
 
-  /// System instructions defining empathetic healthcare assistant for Bangladesh
+  /// System instructions defining empathetic healthcare chatbot for Bangladesh
   static String _buildSystemInstruction(bool isBangla) => isBangla
-      ? '''আপনি বাংলাদেশের ডিজিটাল স্বাস্থ্য প্ল্যাটফর্ম 'স্বাস্থ্যালয়' (Sasthyaloy)-এর অভিজ্ঞ ও সহমর্মী মেডিকেল এআই ডক্টর ও হেলথ অ্যাসিস্ট্যান্ট।
-ব্যবহারকারীর সাথে আন্তরিক ও বন্ধুত্বপূর্ণ কথোপকথন (Conversational Chat) বজায় রাখুন এবং পূর্ববর্তী বার্তার সূত্র মনে রেখে প্রাসঙ্গিক উত্তর দিন।
-আপনার দায়িত্ব:
-1. সম্পূর্ণ বাংলায় স্পষ্ট, সহানুভূতিশীল ও চিকিৎসাবিজ্ঞানসম্মত পরামর্শ ও উত্তর দিন। ব্যবহারকারী কোনো সাধারণ কথা বললে বা কুশল বিনিময় করলে বন্ধুত্বপূর্ণ স্বাভাবিক উত্তর দিন।
-2. শারীরিক লক্ষণের ক্ষেত্রে (যেমন মাথাব্যথা, পেটব্যথা, এলার্জি, চর্মরোগ, চোখ/নাকের সমস্যা ইত্যাদি) রোগের সম্ভাব্য কারণ ও প্রাথমিক ঘরোয়া যত্ন ৩-৪টি সহজ বুলেট পয়েন্টে বুঝিয়ে বলুন।
-3. যদি জরুরি অবস্থা হয় (বুকে তীব্র ব্যথা বা চাপ, শ্বাসকষ্ট, স্ট্রোক বা প্যারালাইসিস লক্ষণ, মাত্রাতিরিক্ত রক্তপাত), তবে শুরুতেই ৯৯৯ বা ১৬২৬৩-এ জরুরি যোগাযোগের পরামর্শ দিন।
-4. শারীরিক সমস্যা অনুযায়ী কোন বিশেষজ্ঞ ডাক্তারের কাছে যাওয়া উচিত তা স্পষ্টভাবে উল্লেখ করুন (যেমন: নিউরোলজিস্ট, কার্ডিওলজিস্ট, গ্যাস্ট্রোএন্টারোলজিস্ট, চর্মরোগ বিশেষজ্ঞ ইত্যাদি)।
-5. ব্যবহারকারীর পূর্ববর্তী বার্তার সূত্র ধরে ফলো-আপ প্রশ্ন করুন যাতে সঠিক পর্যবেক্ষণ দেওয়া যায়। কোনো অপ্রাসঙ্গিক বা কৃত্রিম ভূমিকা ছাড়াই সরাসরি স্বাভাবিক ও পেশাদার ভাষায় উত্তর দিন।'''
-      : '''You are the compassionate and expert Medical AI Assistant and Doctor for 'Sasthyaloy', Bangladesh's leading digital healthcare platform.
-Engage in natural, multi-turn medical chat while remembering the full conversation context.
-Your responsibilities:
-1. Respond clearly, empathetically, and accurately in English. If the user engages in normal conversation or greetings, respond politely and conversationally.
-2. For symptoms (e.g. headache, abdominal pain, fever, allergy, eye strain), explain likely causes and practical home remedies in 3-4 structured bullet points.
-3. If life-threatening (chest pressure, severe shortness of breath, stroke symptoms, uncontrolled bleeding), immediately advise calling emergency helpline 999 or 16263.
-4. Mention which specialist doctor they should consult (e.g. Neurologist, Cardiologist, General Physician, Gastroenterologist, Dermatologist).
-5. Ask relevant follow-up questions based on earlier messages to refine your observation. Start directly with natural, supportive prose.''';
+      ? '''আপনি বাংলাদেশের শীর্ষস্থানীয় ডিজিটাল স্বাস্থ্য প্ল্যাটফর্ম 'স্বাস্থ্যালয়' (Sasthyaloy)-এর অভিজ্ঞ ও সহমর্মী মেডিকেল এআই ডক্টর ও হেলথ অ্যাসিস্ট্যান্ট।
+একজন দক্ষ ও আন্তরিক এআই চ্যাটবটের মতো ব্যবহারকারীর সাথে সহজ, সাবলীল ও বন্ধুত্বপূর্ণ ভাষায় কথা বলুন।
+আপনার বৈশিষ্ট্য ও নিয়মাবলী:
+1. ব্যবহারকারী যদি কুশল বিনিময় করেন (যেমন: কেমন আছেন, হাই, হ্যালো, কি খবর, kmn aso) বা সাধারণ কথা বলেন, তবে আন্তরিক ও ফ্রেন্ডলি চ্যাটবটের মতো স্বাভাবিক কুশল বিনিময় ও উত্তর দিন।
+2. ব্যবহারকারী যদি কোনো শারীরিক অসুস্থতা বা লক্ষণ জানান (মাথাব্যথা, পেটব্যথা, জ্বর, কাশি, এলার্জি, চর্মরোগ ইত্যাদি), তবে রোগের সম্ভাব্য কারণ, প্রয়োজনীয় সতর্কতা ও ৩-৪টি সহজ ঘরোয়া যত্ন পয়েন্ট আকারে বুঝিয়ে বলুন।
+3. যদি জরুরি অবস্থা হয় (বুকে তীব্র ব্যথা বা চাপ, শ্বাসকষ্ট, স্ট্রোক বা প্যারালাইসিস লক্ষণ, মাত্রাতিরিক্ত রক্তপাত), তবে শুরুতেই ৯৯৯ বা ১৬২৬৩ জরুরি হেল্পলাইনে যোগাযোগের পরামর্শ দিন।
+4. কোনো ছবি দেওয়া হলে (প্রেসক্রিপশন, রিপোর্ট বা আক্রান্ত স্থান), ছবিটি মনোযোগ দিয়ে পর্যবেক্ষণ করে তার সুস্পষ্ট ব্যাখ্যা ও পরামর্শ দিন।
+5. বাংলা, ইংরেজি বা বাংলিশ যে ভাষাতেই প্রশ্ন করুক না কেন, সেই ভাষা বুঝে সম্পূর্ণ বাংলায় সুন্দর, সহমর্মী ও প্রাসঙ্গিক উত্তর দিন। অপ্রয়োজনীয় দীর্ঘ ভূমিকা ছাড়াই সরাসরি পয়েন্টে উত্তর দিন।'''
+      : '''You are the compassionate and expert Medical AI Doctor and Assistant for 'Sasthyaloy', Bangladesh's leading digital healthcare platform.
+Engage in natural, friendly, conversational multi-turn chat just like a smart AI assistant and medical counselor.
+Your characteristics:
+1. If the user engages in normal conversation, greetings (hi, hello, how are you, kmn aso), or general questions, respond politely and naturally like a friendly chatbot.
+2. If the user describes physical symptoms (headache, fever, stomach ache, allergy, rash), provide structured, medically-sound home care and observations in clear bullet points.
+3. If life-threatening (severe chest pain, breathing difficulty, stroke symptoms, uncontrolled bleeding), immediately advise calling emergency helpline 999 or 16263.
+4. If an image is provided (prescription, report, visible rash/injury), analyze the image accurately and explain findings clearly.
+5. Support English, Bengali, and Banglish naturally with direct, empathetic answers.''';
 
   /// Clean raw AI text and parse structured data into AiChatMessage
   AiChatMessage _parseAiResponse({
@@ -270,7 +271,7 @@ Your responsibilities:
         (lowerResp.contains('জরুরি') && lowerResp.contains('৯৯৯')) ||
         (lowerResp.contains('emergency') && lowerResp.contains('999'));
 
-    // Extract bullet points as home remedies
+    // Extract bullet points as home remedies only if present in AI response
     final lines = cleaned.split('\n');
     final remedies = <String>[];
     for (final line in lines) {
@@ -286,30 +287,27 @@ Your responsibilities:
       }
     }
 
-    // Default remedies if none parsed and not just a greeting
-    final isGreeting = lower == 'hi' ||
+    // Detect if this is casual chat/greeting vs an actual medical condition query
+    final isCasualQuery = lower == 'hi' ||
         lower == 'hello' ||
         lower == 'hey' ||
         lower == 'হাই' ||
         lower == 'হ্যালো' ||
-        lower == 'কেমন আছেন';
+        lower == 'kmn aso' ||
+        lower == 'kmn aso?' ||
+        lower == 'kemon acho' ||
+        lower == 'kemon acho?' ||
+        lower == 'কেমন আছেন' ||
+        lower == 'কেমন আছেন?' ||
+        lower == 'কি খবর' ||
+        lower == 'ki khobor' ||
+        lower == 'whats up' ||
+        lower == 'whats us?' ||
+        lower == 'hello?' ||
+        lower == 'কেমন আছো?';
 
-    if (remedies.isEmpty && !isGreeting) {
-      if (isBangla) {
-        remedies.addAll([
-          'পর্যাপ্ত পরিমাণে বিশুদ্ধ পানি পান করুন ও বিশ্রাম নিন',
-          'শারীরিক লক্ষণ বৃদ্ধি পেলে দ্রুত চিকিৎসকের পরামর্শ নিন',
-        ]);
-      } else {
-        remedies.addAll([
-          'Stay hydrated with clean fluids and take adequate rest',
-          'Consult a registered physician if symptoms persist or worsen',
-        ]);
-      }
-    }
-
-    // Suggested doctor specialization
-    String suggestedDoc;
+    // Suggested doctor specialization ONLY when an actual medical condition is mentioned
+    String? suggestedDoc;
     if (isEmergency) {
       suggestedDoc = isBangla
           ? 'হৃদরোগ / ইমার্জেন্সি বিশেষজ্ঞ'
@@ -321,7 +319,7 @@ Your responsibilities:
       suggestedDoc = isBangla
           ? 'নিউরোলজিস্ট / মেডিসিন বিশেষজ্ঞ'
           : 'Neurologist / Medicine Specialist';
-    } else if (lower.contains('চুলকানি') || lower.contains('র‍্যাশ') || imagePath != null) {
+    } else if (lower.contains('চুলকানি') || lower.contains('র‍্যাশ') || lower.contains('rash') || (imagePath != null && (lower.contains('ত্বক') || lower.contains('skin')))) {
       suggestedDoc = isBangla
           ? 'চর্ম ও যৌনরোগ বিশেষজ্ঞ (Dermatologist)'
           : 'Dermatologist';
@@ -329,11 +327,19 @@ Your responsibilities:
       suggestedDoc = isBangla
           ? 'চক্ষু বিশেষজ্ঞ (Ophthalmologist)'
           : 'Ophthalmologist';
-    } else if (lower.contains('পেট') || lower.contains('গ্যাস') || lower.contains('stomach')) {
+    } else if (lower.contains('পেট') || lower.contains('গ্যাস') || lower.contains('stomach') || lower.contains('acidity')) {
       suggestedDoc = isBangla
           ? 'গ্যাস্ট্রোএন্টারোলজিস্ট (Gastroenterologist)'
           : 'Gastroenterologist';
-    } else {
+    } else if (lower.contains('দাঁত') || lower.contains('dental') || lower.contains('tooth')) {
+      suggestedDoc = isBangla
+          ? 'দন্ত বিশেষজ্ঞ (Dentist)'
+          : 'Dentist';
+    } else if (lower.contains('হাড়') || lower.contains('bone') || lower.contains('orthopedic')) {
+      suggestedDoc = isBangla
+          ? 'অর্থোপেডিক বিশেষজ্ঞ (Orthopedic)'
+          : 'Orthopedic';
+    } else if (!isCasualQuery && (lower.contains('ব্যথা') || lower.contains('pain') || lower.contains('জ্বর') || lower.contains('fever') || lower.contains('কাশি') || lower.contains('cold') || lower.contains('cough'))) {
       suggestedDoc = isBangla
           ? 'জেনারেল ফিজিশিয়ান (General Physician)'
           : 'General Physician';
@@ -345,7 +351,7 @@ Your responsibilities:
       text: cleaned,
       timestamp: timeStr,
       isEmergency: isEmergency,
-      recommendedSpecialist: isGreeting ? null : suggestedDoc,
+      recommendedSpecialist: suggestedDoc,
       firstAidAdvice: isEmergency
           ? (isBangla
               ? '১. রোগীকে শান্ত ও আরামদায়ক অবস্থায় বসিয়ে দিন।\n২. অতি দ্রুত ৯৯৯ অথবা ১৬২৬৩ জরুরি হেল্পলাইনে কল করুন।'

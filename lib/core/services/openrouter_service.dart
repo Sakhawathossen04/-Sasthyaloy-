@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../features/voice_ai/domain/models/symptom_triage_model.dart';
+import '../utils/platform_utils.dart';
 
 /// Service connecting Sasthyaloy AI to OpenRouter's free AI models
 /// with multimodal vision support, failover, and local clinical fallback.
@@ -50,7 +50,7 @@ class OpenRouterService {
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
     // 1. In unit tests or mock environment, immediately use clinical triage engine
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (PlatformUtils.isFlutterTest) {
       return ClinicalTriageEngine.analyzeSymptoms(
         userQuery,
         isBangla,

@@ -208,7 +208,7 @@ app.post('/api/v1/ai/triage', async (req, res) => {
   const { query, isBangla = true, imageBase64, history = [] } = req.body;
   const defaultKey = Buffer.from('QVEuQWI4Uk42S3BiZFEwSDBsck9ySkplQzRaVW50MjJ6RTQzbFlVdUVrQnlVMnFUckVYYnc=', 'base64').toString('utf-8');
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || defaultKey;
-  const candidateModels = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'];
+  const candidateModels = ['gemini-3.1-flash-lite', 'gemini-3-flash-preview', 'gemini-3.5-flash-lite'];
 
   const contents = [];
   if (Array.isArray(history) && history.length > 0) {

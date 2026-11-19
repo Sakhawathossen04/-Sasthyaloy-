@@ -13,6 +13,7 @@ import '../../../../core/services/speech_service.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/services/symptom_correction_service.dart';
 import '../../../../core/services/tts_service.dart';
+import '../../../../core/utils/platform_utils.dart';
 import '../../../doctors/presentation/screens/speciality_search_screen.dart';
 import '../../domain/models/symptom_triage_model.dart';
 
@@ -420,7 +421,7 @@ class _VoiceAiScreenState extends State<VoiceAiScreen>
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb || PlatformUtils.isFlutterTest) {
       _attachSampleClinicalImage(AppLocaleController.instance.isBangla);
       return;
     }
@@ -655,8 +656,12 @@ class _VoiceAiScreenState extends State<VoiceAiScreen>
                     ),
                   ),
                   Text(
-                    isBn ? 'ওপেনরাউটার ক্লিনিক্যাল এআই' : 'OpenRouter Clinical AI',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    isBn ? 'গুগল জেমিনি ৩.১ ফ্ল্যাশ এআই' : 'Google Gemini 3.1 Flash AI',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.brandCyan,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -763,8 +768,8 @@ class _VoiceAiScreenState extends State<VoiceAiScreen>
                       const SizedBox(width: 10),
                       Text(
                         isBn
-                            ? 'ওপেনরাউটার এআই লক্ষণ বিশ্লেষণ করছে...'
-                            : 'OpenRouter AI analyzing clinical symptoms...',
+                            ? 'জেমিনি এআই উত্তর তৈরি করছে...'
+                            : 'Gemini AI generating response...',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -1065,8 +1070,8 @@ class _VoiceAiScreenState extends State<VoiceAiScreen>
                                       ? 'জরুরি ট্রায়াজ এলার্ট (Emergency)'
                                       : 'Critical Emergency Alert')
                                   : (isBn
-                                      ? 'স্বাস্থ্যালয় AI ট্রায়াজ'
-                                      : 'Sasthyaloy AI Guidance'),
+                                      ? 'স্বাস্থ্যালয় এআই (জেমিনি)'
+                                      : 'Sasthyaloy AI (Gemini)'),
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.bold,

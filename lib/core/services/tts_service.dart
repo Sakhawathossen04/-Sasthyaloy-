@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import '../utils/platform_utils.dart';
 
 /// Text-to-Speech (TTS) Service for Sasthyaloy AI Healthcare Assistant.
 /// Delivers natural, clinical-grade voice output in Bengali and English.
@@ -23,7 +23,7 @@ class TtsService {
     if (_isInitialized) return;
 
     // Unit test / headless environment guard
-    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb || PlatformUtils.isFlutterTest) {
       _isInitialized = true;
       return;
     }
@@ -82,7 +82,7 @@ class TtsService {
     }
 
     // In unit test environment
-    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb || PlatformUtils.isFlutterTest) {
       currentMessageIdNotifier.value = messageId;
       isPlayingNotifier.value = true;
       return;
@@ -108,7 +108,7 @@ class TtsService {
 
   /// Stop any active speech playback
   Future<void> stop() async {
-    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb || PlatformUtils.isFlutterTest) {
       isPlayingNotifier.value = false;
       currentMessageIdNotifier.value = null;
       return;

@@ -1,7 +1,7 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import '../utils/platform_utils.dart';
 
 /// Speech-to-Text (STT) Recognition Service for Sasthyaloy Healthcare Assistant.
 /// Captures voice symptoms in Bengali and English with automatic silence detection.
@@ -21,7 +21,7 @@ class SpeechService {
   Future<bool> initialize() async {
     if (_isInitialized && _speech != null) return true;
 
-    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb || PlatformUtils.isFlutterTest) {
       _isInitialized = true;
       return true;
     }
@@ -68,11 +68,11 @@ class SpeechService {
     required bool isBangla,
   }) async {
     final ready = await initialize();
-    if (!ready && !(kIsWeb || Platform.environment.containsKey('FLUTTER_TEST'))) {
+    if (!ready && !(kIsWeb || PlatformUtils.isFlutterTest)) {
       return false;
     }
 
-    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb || PlatformUtils.isFlutterTest) {
       isListeningNotifier.value = true;
       return true;
     }
@@ -150,7 +150,7 @@ class SpeechService {
 
   /// Stop listening and trigger final processing
   Future<void> stopListening() async {
-    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb || PlatformUtils.isFlutterTest) {
       isListeningNotifier.value = false;
       return;
     }
@@ -166,7 +166,7 @@ class SpeechService {
 
   /// Cancel listening immediately
   Future<void> cancelListening() async {
-    if (kIsWeb || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (kIsWeb || PlatformUtils.isFlutterTest) {
       isListeningNotifier.value = false;
       return;
     }
